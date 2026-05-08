@@ -1,0 +1,19 @@
+{
+  "name": "travel-buddy-shared",
+  "version": "1.0.0",
+  "description": "Shared utilities for Travel Buddy Finder Node.js services",
+  "scripts": {
+    "test": "jest --verbose",
+    "test:watch": "jest --watch"
+  },
+  "dependencies": {
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": ["**/*.test.js"]
+  }
+}

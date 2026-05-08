@@ -1,0 +1,707 @@
+openapi: 3.0.3
+info:
+  title: Travel Buddy Finder API Contract
+  version: 1.0.0
+  description: OpenAPI 3.0 specification for Travel Buddy Finder microservices.
+
+servers:
+  - url: http://localhost:8080/api
+    description: API Gateway (Local)
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+
+    UserDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        fullName:
+          type: string
+      required:
+        - id
+        - email
+        - fullName
+
+    TripDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        ownerId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        location:
+          type: string
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        maxMembers:
+          type: integer
+        tags:
+          type: array
+          items:
+            type: string
+        isPublic:
+          type: boolean
+      required:
+        - id
+        - ownerId
+        - title
+        - location
+        - startDate
+        - endDate
+
+    JoinRequestDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tripId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [PENDING, APPROVED, REJECTED]
+        message:
+          type: string
+      required:
+        - id
+        - tripId
+        - userId
+        - status
+
+    NotificationDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        tripId:
+          type: string
+          format: uuid
+        message:
+          type: string
+        type:
+          type: string
+          enum: [JOIN_APPROVED, JOIN_REJECTED, GENERAL]
+        isRead:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - userId
+        - message
+        - type
+        - isRead
+
+    MessageDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tripId:
+          type: string
+          format: uuid
+        senderId:
+          type: string
+          format: uuid
+        senderEmail:
+          type: string
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - tripId
+        - senderId
+        - senderEmail
+        - content
+
+    ReviewDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        reviewerId:
+          type: string
+          format: uuid
+        revieweeId:
+          type: string
+          format: uuid
+        tripId:
+          type: string
+          format: uuid
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - reviewerId
+        - revieweeId
+        - tripId
+        - rating
+
+paths:
+  # ==========================================
+  # USER SERVICE (:8081)
+  # ==========================================
+  /auth/register:
+    post:
+      tags: [User Service]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+                fullName:
+                  type: string
+              required: [email, password, fullName]
+            example:
+              email: test@example.com
+              password: password123
+              fullName: Test User
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDTO'
+        '400':
+          description: Bad request (e.g., email exists)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/login:
+    post:
+      tags: [User Service]
+      summary: Login and get JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+              required: [email, password]
+            example:
+              email: test@example.com
+              password: password123
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/{id}:
+    get:
+      tags: [User Service]
+      summary: Get user profile
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDTO'
+        '404':
+          description: User not found
+
+  # ==========================================
+  # TRIP SERVICE (:8082)
+  # ==========================================
+  /trips:
+    post:
+      tags: [Trip Service]
+      summary: Create a new trip
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                location:
+                  type: string
+                startDate:
+                  type: string
+                  format: date
+                endDate:
+                  type: string
+                  format: date
+                maxMembers:
+                  type: integer
+                tags:
+                  type: array
+                  items:
+                    type: string
+              required: [title, location, startDate, endDate]
+            example:
+              title: "Da Lat Trip"
+              description: "Relaxing trip to Da Lat"
+              location: "Da Lat"
+              startDate: "2026-06-01"
+              endDate: "2026-06-05"
+              maxMembers: 5
+              tags: ["mountain", "chill"]
+      responses:
+        '201':
+          description: Trip created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripDTO'
+
+    get:
+      tags: [Trip Service]
+      summary: List public trips
+      parameters:
+        - name: location
+          in: query
+          schema:
+            type: string
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: tag
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of trips
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TripDTO'
+
+  /trips/{id}:
+    get:
+      tags: [Trip Service]
+      summary: Get trip details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Trip details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripDTO'
+        '404':
+          description: Trip not found
+
+    put:
+      tags: [Trip Service]
+      summary: Update trip
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                location:
+                  type: string
+                startDate:
+                  type: string
+                  format: date
+                endDate:
+                  type: string
+                  format: date
+                maxMembers:
+                  type: integer
+                tags:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Trip updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripDTO'
+        '403':
+          description: Not owner
+
+    delete:
+      tags: [Trip Service]
+      summary: Delete trip
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Trip deleted
+        '403':
+          description: Not owner
+
+  # ==========================================
+  # JOIN REQUEST SERVICE (:8083)
+  # ==========================================
+  /join-requests:
+    post:
+      tags: [Join Request Service]
+      summary: Send join request
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tripId:
+                  type: string
+                  format: uuid
+                message:
+                  type: string
+              required: [tripId]
+            example:
+              tripId: "123e4567-e89b-12d3-a456-426614174000"
+              message: "Let me join please!"
+      responses:
+        '201':
+          description: Request sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JoinRequestDTO'
+
+    get:
+      tags: [Join Request Service]
+      summary: List join requests for a trip
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tripId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/JoinRequestDTO'
+
+  /join-requests/{id}/approve:
+    put:
+      tags: [Join Request Service]
+      summary: Approve join request
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Request approved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JoinRequestDTO'
+        '403':
+          description: Not trip owner
+
+  /join-requests/{id}/reject:
+    put:
+      tags: [Join Request Service]
+      summary: Reject join request
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Request rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JoinRequestDTO'
+        '403':
+          description: Not trip owner
+
+  # ==========================================
+  # NOTIFICATION SERVICE (:8084)
+  # ==========================================
+  /notifications/{userId}:
+    get:
+      tags: [Notification Service]
+      summary: Get notifications for user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of notifications
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NotificationDTO'
+                  total:
+                    type: integer
+
+  /notifications/{id}/read:
+    put:
+      tags: [Notification Service]
+      summary: Mark notification as read
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Marked as read
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  # ==========================================
+  # CHAT SERVICE (:8085)
+  # ==========================================
+  /messages:
+    get:
+      tags: [Chat Service]
+      summary: Get message history for trip
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tripId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MessageDTO'
+
+  # ==========================================
+  # REVIEW SERVICE (:8086) - SPRINT 3
+  # ==========================================
+  /reviews:
+    post:
+      tags: [Review Service]
+      summary: Create a review
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                revieweeId:
+                  type: string
+                  format: uuid
+                tripId:
+                  type: string
+                  format: uuid
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                comment:
+                  type: string
+              required: [revieweeId, tripId, rating]
+            example:
+              revieweeId: "123e4567-e89b-12d3-a456-426614174000"
+              tripId: "123e4567-e89b-12d3-a456-426614174001"
+              rating: 5
+              comment: "Great trip companion!"
+      responses:
+        '201':
+          description: Review created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewDTO'
+
+  /reviews/user/{id}:
+    get:
+      tags: [Review Service]
+      summary: Get reviews for user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of reviews for the user
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReviewDTO'
