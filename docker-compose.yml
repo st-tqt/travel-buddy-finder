@@ -1,252 +1,294 @@
-version: '3.9'
+version: '3.8'
 
 services:
-  # ============================================================
-  # DATABASES – mỗi service có DB riêng (Database per Service pattern)
-  # ============================================================
+  # ===========================================================================
+  # DATABASES (PostgreSQL)
+  # ===========================================================================
   user-db:
     image: postgres:15-alpine
+    container_name: user-db
     environment:
       POSTGRES_DB: user_db
-      POSTGRES_USER: ${USER_DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${USER_DB_PASSWORD:-password}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secret
     ports:
       - "5432:5432"
     volumes:
-      - user_db_data:/var/lib/postgresql/data
+      - user-db-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - travel-buddy-network
 
   trip-db:
     image: postgres:15-alpine
+    container_name: trip-db
     environment:
       POSTGRES_DB: trip_db
-      POSTGRES_USER: ${TRIP_DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${TRIP_DB_PASSWORD:-password}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secret
     ports:
       - "5433:5432"
     volumes:
-      - trip_db_data:/var/lib/postgresql/data
+      - trip-db-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - travel-buddy-network
 
   join-db:
     image: postgres:15-alpine
+    container_name: join-db
     environment:
       POSTGRES_DB: join_db
-      POSTGRES_USER: ${JOIN_DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${JOIN_DB_PASSWORD:-password}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secret
     ports:
       - "5434:5432"
     volumes:
-      - join_db_data:/var/lib/postgresql/data
+      - join-db-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - travel-buddy-network
 
   notification-db:
     image: postgres:15-alpine
+    container_name: notification-db
     environment:
       POSTGRES_DB: notification_db
-      POSTGRES_USER: ${NOTIF_DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${NOTIF_DB_PASSWORD:-password}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secret
     ports:
       - "5435:5432"
     volumes:
-      - notification_db_data:/var/lib/postgresql/data
+      - notification-db-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - travel-buddy-network
 
   chat-db:
     image: postgres:15-alpine
+    container_name: chat-db
     environment:
       POSTGRES_DB: chat_db
-      POSTGRES_USER: ${CHAT_DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${CHAT_DB_PASSWORD:-password}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secret
     ports:
       - "5436:5432"
     volumes:
-      - chat_db_data:/var/lib/postgresql/data
+      - chat-db-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - travel-buddy-network
 
   review-db:
     image: postgres:15-alpine
+    container_name: review-db
     environment:
       POSTGRES_DB: review_db
-      POSTGRES_USER: ${REVIEW_DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${REVIEW_DB_PASSWORD:-password}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secret
     ports:
       - "5437:5432"
     volumes:
-      - review_db_data:/var/lib/postgresql/data
+      - review-db-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - travel-buddy-network
 
-  # ============================================================
-  # MESSAGE QUEUE – TV3 setup
-  # ============================================================
+  # ===========================================================================
+  # MESSAGE BROKER
+  # ===========================================================================
   rabbitmq:
     image: rabbitmq:3-management
+    container_name: rabbitmq
     ports:
       - "5672:5672"
       - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
-    networks:
-      - travel-buddy-network
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - travel-buddy-network
 
-  # ============================================================
-  # MICROSERVICES
-  # ============================================================
+  # ===========================================================================
+  # BACKEND SERVICES
+  # ===========================================================================
   user-service:
     build: ./user-service
+    container_name: user-service
     ports:
-      - "${USER_SERVICE_PORT:-8081}:8081"
+      - "8081:8081"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://user-db:5432/user_db
-      SPRING_DATASOURCE_USERNAME: ${USER_DB_USER:-postgres}
-      SPRING_DATASOURCE_PASSWORD: ${USER_DB_PASSWORD:-password}
-      JWT_SECRET: ${JWT_SECRET}
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: secret
+      APP_JWT_SECRET: ${JWT_SECRET}
+      APP_JWT_EXPIRATION: ${JWT_EXPIRES_IN}
     depends_on:
       user-db:
         condition: service_healthy
-    restart: unless-stopped
+    networks:
+      - travel-buddy-network
+    restart: on-failure
 
   trip-service:
     build: ./trip-service
+    container_name: trip-service
     ports:
-      - "${TRIP_SERVICE_PORT:-8082}:8082"
+      - "8082:8082"
     environment:
+      PORT: 8082
+      JWT_SECRET: ${JWT_SECRET}
       DB_HOST: trip-db
       DB_PORT: 5432
       DB_NAME: trip_db
-      DB_USER: ${TRIP_DB_USER:-postgres}
-      DB_PASSWORD: ${TRIP_DB_PASSWORD:-password}
-      JWT_SECRET: ${JWT_SECRET}
+      DB_USER: postgres
+      DB_PASSWORD: secret
     depends_on:
       trip-db:
         condition: service_healthy
-    restart: unless-stopped
+    networks:
+      - travel-buddy-network
+    restart: on-failure
 
   join-request-service:
     build: ./join-request-service
+    container_name: join-request-service
     ports:
-      - "${JOIN_SERVICE_PORT:-8083}:8083"
+      - "8083:8083"
     environment:
+      PORT: 8083
+      JWT_SECRET: ${JWT_SECRET}
       DB_HOST: join-db
       DB_PORT: 5432
       DB_NAME: join_db
-      DB_USER: ${JOIN_DB_USER:-postgres}
-      DB_PASSWORD: ${JOIN_DB_PASSWORD:-password}
-      JWT_SECRET: ${JWT_SECRET}
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5672
-      RABBITMQ_USER: ${RABBITMQ_USER:-guest}
-      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      DB_USER: postgres
+      DB_PASSWORD: secret
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
     depends_on:
       join-db:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-    restart: unless-stopped
+    networks:
+      - travel-buddy-network
+    restart: on-failure
 
   notification-service:
     build: ./notification-service
+    container_name: notification-service
     ports:
-      - "${NOTIFICATION_SERVICE_PORT:-8084}:8084"
+      - "8084:8084"
     environment:
-      NOTIFICATION_DB_HOST: notification-db
-      NOTIFICATION_DB_PORT: 5432
-      NOTIFICATION_DB_NAME: notification_db
-      NOTIFICATION_DB_USER: ${NOTIFICATION_DB_USER:-postgres}
-      NOTIFICATION_DB_PASSWORD: ${NOTIFICATION_DB_PASSWORD:-secret}
+      PORT: 8084
       JWT_SECRET: ${JWT_SECRET}
+      DB_HOST: notification-db
+      DB_PORT: 5432
+      DB_NAME: notification_db
+      DB_USER: postgres
+      DB_PASSWORD: secret
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
-      RABBITMQ_EXCHANGE: join-request-events
-      RABBITMQ_QUEUE: notification.queue
     depends_on:
       notification-db:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-    restart: unless-stopped
+    networks:
+      - travel-buddy-network
+    restart: on-failure
 
   chat-service:
     build: ./chat-service
+    container_name: chat-service
     ports:
-      - "${CHAT_SERVICE_PORT:-8085}:8085"
+      - "8085:8085"
     environment:
+      PORT: 8085
+      JWT_SECRET: ${JWT_SECRET}
       DB_HOST: chat-db
       DB_PORT: 5432
       DB_NAME: chat_db
-      DB_USER: ${CHAT_DB_USER:-postgres}
-      DB_PASSWORD: ${CHAT_DB_PASSWORD:-password}
-      JWT_SECRET: ${JWT_SECRET}
+      DB_USER: postgres
+      DB_PASSWORD: secret
     depends_on:
       chat-db:
         condition: service_healthy
-    restart: unless-stopped
+    networks:
+      - travel-buddy-network
+    restart: on-failure
 
   review-service:
     build: ./review-service
+    container_name: review-service
     ports:
-      - "${REVIEW_SERVICE_PORT:-8086}:8086"
+      - "8086:8086"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://review-db:5432/review_db
-      SPRING_DATASOURCE_USERNAME: ${REVIEW_DB_USER:-postgres}
-      SPRING_DATASOURCE_PASSWORD: ${REVIEW_DB_PASSWORD:-password}
-      JWT_SECRET: ${JWT_SECRET}
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: secret
+      APP_JWT_SECRET: ${JWT_SECRET}
     depends_on:
       review-db:
         condition: service_healthy
-    restart: unless-stopped
+    networks:
+      - travel-buddy-network
+    restart: on-failure
 
+  # ===========================================================================
+  # FRONTEND
+  # ===========================================================================
   frontend:
     build: ./frontend
+    container_name: frontend
     ports:
-      - "3000:3000"
+      - "5173:5173"
     environment:
-      VITE_API_BASE_URL: http://localhost:${API_GATEWAY_PORT:-8080}
-    depends_on:
-      - user-service
-    restart: unless-stopped
+      VITE_API_URL: http://localhost:3000
+    # Note: api-gateway chưa có trong tuần 1, sẽ thêm depends_on vào tuần 2
+    # depends_on:
+    #   - api-gateway
+    networks:
+      - travel-buddy-network
 
-# ============================================================
-# VOLUMES
-# ============================================================
-volumes:
-  user_db_data:
-  trip_db_data:
-  join_db_data:
-  notification_db_data:
-  chat_db_data:
-  review_db_data:
-  rabbitmq_data:
-
+# ===========================================================================
+# VOLUMES & NETWORKS
+# ===========================================================================
 networks:
   travel-buddy-network:
     driver: bridge
+
+volumes:
+  user-db-data:
+  trip-db-data:
+  join-db-data:
+  notification-db-data:
+  chat-db-data:
+  review-db-data:

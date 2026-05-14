@@ -1,13 +1,73 @@
-name: CI Pipeline
+name: CI/CD Pipeline
+
 on:
   push:
-    branches: [develop, main]
+    branches: [develop, main, "feature/*"]
   pull_request:
     branches: [develop, main]
+
 jobs:
-  placeholder:
+  lint-and-build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: CI placeholder
-        run: echo "CI pipeline – TV5 implement Sprint 2"
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies and lint for Node.js services
+        run: |
+          services=("trip-service" "join-request-service" "notification-service" "chat-service")
+          for service in "${services[@]}"; do
+            echo "Checking $service..."
+            if [ -d "$service" ]; then
+              cd $service
+              npm install
+              # Bỏ qua lỗi nếu app.js chưa tồn tại (cho Week 1 skeleton)
+              [ -f src/app.js ] && node --check src/app.js || echo "src/app.js not found, skipping syntax check."
+              cd ..
+            fi
+          done
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: lint-and-build
+    if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker images for all services
+        run: |
+          docker compose -f docker-compose.yml build
+
+  integration-test:
+    runs-on: ubuntu-latest
+    needs: docker-build
+    if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Start services with Docker Compose
+        run: docker compose up -d
+
+      - name: Wait for services to be healthy
+        run: |
+          echo "Waiting for 30 seconds for services to initialize..."
+          sleep 30
+
+      - name: Smoke test health endpoints
+        run: |
+          # Placeholder, tuần 2 TV5 implement
+          echo "integration test placeholder"
+          # ./scripts/health-check.sh
+
+      - name: Stop services
+        run: docker compose down
