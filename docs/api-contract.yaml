@@ -1,264 +1,130 @@
-openapi: 3.0.3
+openapi: 3.0.0
 info:
-  title: Travel Buddy Finder API Contract
+  title: Travel Buddy Finder API
+  description: |
+    API Contract cho dự án Travel Buddy Finder (SOA Microservices).
+    Payload JWT thống nhất cho toàn hệ thống: `{ "userId": 1, "email": "user@example.com", "iat": 1715400000, "exp": 1715486400 }` (Thuật toán: HS256)
+    
+    Lưu ý Chat WebSocket: `ws://host:8085/ws/chat?tripId={tripId}`
+    - Client gửi: `{ "content": "tin nhắn" }`
+    - Server broadcast: `{ "id": 1, "tripId": 1, "senderId": 2, "content": "tin nhắn", "createdAt": "2024-05-10T10:00:00Z" }`
   version: 1.0.0
-  description: OpenAPI 3.0 specification for Travel Buddy Finder microservices.
-
 servers:
-  - url: http://localhost:8080/api
-    description: API Gateway (Local)
-
-components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-
-  schemas:
-    ErrorResponse:
-      type: object
-      properties:
-        error:
-          type: string
-        message:
-          type: string
-      required:
-        - error
-
-    UserDTO:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        email:
-          type: string
-          format: email
-        fullName:
-          type: string
-      required:
-        - id
-        - email
-        - fullName
-
-    TripDTO:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        ownerId:
-          type: string
-          format: uuid
-        title:
-          type: string
-        description:
-          type: string
-        location:
-          type: string
-        startDate:
-          type: string
-          format: date
-        endDate:
-          type: string
-          format: date
-        maxMembers:
-          type: integer
-        tags:
-          type: array
-          items:
-            type: string
-        isPublic:
-          type: boolean
-      required:
-        - id
-        - ownerId
-        - title
-        - location
-        - startDate
-        - endDate
-
-    JoinRequestDTO:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        tripId:
-          type: string
-          format: uuid
-        userId:
-          type: string
-          format: uuid
-        status:
-          type: string
-          enum: [PENDING, APPROVED, REJECTED]
-        message:
-          type: string
-      required:
-        - id
-        - tripId
-        - userId
-        - status
-
-    NotificationDTO:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        userId:
-          type: string
-          format: uuid
-        tripId:
-          type: string
-          format: uuid
-        message:
-          type: string
-        type:
-          type: string
-          enum: [JOIN_APPROVED, JOIN_REJECTED, GENERAL]
-        isRead:
-          type: boolean
-        createdAt:
-          type: string
-          format: date-time
-      required:
-        - id
-        - userId
-        - message
-        - type
-        - isRead
-
-    MessageDTO:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        tripId:
-          type: string
-          format: uuid
-        senderId:
-          type: string
-          format: uuid
-        senderEmail:
-          type: string
-        content:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
-      required:
-        - id
-        - tripId
-        - senderId
-        - senderEmail
-        - content
-
-    ReviewDTO:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        reviewerId:
-          type: string
-          format: uuid
-        revieweeId:
-          type: string
-          format: uuid
-        tripId:
-          type: string
-          format: uuid
-        rating:
-          type: integer
-          minimum: 1
-          maximum: 5
-        comment:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
-      required:
-        - id
-        - reviewerId
-        - revieweeId
-        - tripId
-        - rating
-
+  - url: http://localhost:8081
+    description: User Service
+  - url: http://localhost:8082
+    description: Trip Service
+  - url: http://localhost:8083
+    description: Join Request Service
+  - url: http://localhost:8084
+    description: Notification Service
+  - url: http://localhost:8085
+    description: Chat Service
+  - url: http://localhost:8086
+    description: Review Service
 paths:
-  # ==========================================
-  # USER SERVICE (:8081)
-  # ==========================================
   /auth/register:
     post:
-      tags: [User Service]
-      summary: Register a new user
+      tags:
+        - Auth
+      summary: Đăng ký tài khoản
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required: [name, email, password]
               properties:
+                name:
+                  type: string
                 email:
                   type: string
+                  format: email
                 password:
                   type: string
-                fullName:
+                bio:
                   type: string
-              required: [email, password, fullName]
+                tags:
+                  type: array
+                  items:
+                    type: string
             example:
-              email: test@example.com
-              password: password123
-              fullName: Test User
+              name: "Nguyen Van A"
+              email: "nva@example.com"
+              password: "password123"
+              bio: "Travel lover"
+              tags: ["backpacker", "photography"]
       responses:
         '201':
-          description: User registered successfully
+          description: Đăng ký thành công
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserDTO'
+              example:
+                id: 1
+                name: "Nguyen Van A"
+                email: "nva@example.com"
+                createdAt: "2024-05-10T10:00:00Z"
         '400':
-          description: Bad request (e.g., email exists)
+          description: Lỗi validation hoặc email trùng
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Bad Request"
+                message: "Email đã tồn tại"
 
   /auth/login:
     post:
-      tags: [User Service]
-      summary: Login and get JWT
+      tags:
+        - Auth
+      summary: Đăng nhập
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required: [email, password]
               properties:
                 email:
                   type: string
+                  format: email
                 password:
                   type: string
-              required: [email, password]
             example:
-              email: test@example.com
-              password: password123
+              email: "nva@example.com"
+              password: "password123"
       responses:
         '200':
-          description: Login successful
+          description: Đăng nhập thành công
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  token:
+                  accessToken:
                     type: string
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                      email:
+                        type: string
+              example:
+                accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                user:
+                  id: 1
+                  name: "Nguyen Van A"
+                  email: "nva@example.com"
         '401':
-          description: Invalid credentials
+          description: Sai email hoặc password
           content:
             application/json:
               schema:
@@ -266,138 +132,178 @@ paths:
 
   /users/{id}:
     get:
-      tags: [User Service]
-      summary: Get user profile
+      tags:
+        - User
+      summary: Lấy thông tin user
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       parameters:
-        - name: id
-          in: path
+        - in: path
+          name: id
           required: true
           schema:
-            type: string
-            format: uuid
+            type: integer
+          example: 1
       responses:
         '200':
-          description: User profile
+          description: Thông tin user
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserDTO'
+              example:
+                id: 1
+                name: "Nguyen Van A"
+                email: "nva@example.com"
+                bio: "Travel lover"
+                tags: ["backpacker", "photography"]
+                createdAt: "2024-05-10T10:00:00Z"
+        '401':
+          description: Unauthorized
         '404':
-          description: User not found
+          description: Không tìm thấy user
 
-  # ==========================================
-  # TRIP SERVICE (:8082)
-  # ==========================================
   /trips:
     post:
-      tags: [Trip Service]
-      summary: Create a new trip
+      tags:
+        - Trip
+      summary: Tạo chuyến đi
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required: [title, location, startDate, endDate, maxMember]
               properties:
                 title:
-                  type: string
-                description:
                   type: string
                 location:
                   type: string
                 startDate:
                   type: string
-                  format: date
+                  format: date-time
                 endDate:
                   type: string
-                  format: date
-                maxMembers:
+                  format: date-time
+                maxMember:
                   type: integer
                 tags:
                   type: array
                   items:
                     type: string
-              required: [title, location, startDate, endDate]
             example:
-              title: "Da Lat Trip"
-              description: "Relaxing trip to Da Lat"
-              location: "Da Lat"
-              startDate: "2026-06-01"
-              endDate: "2026-06-05"
-              maxMembers: 5
-              tags: ["mountain", "chill"]
+              title: "Đi Đà Lạt cuối tuần"
+              location: "Đà Lạt"
+              startDate: "2024-06-01T00:00:00Z"
+              endDate: "2024-06-03T00:00:00Z"
+              maxMember: 5
+              tags: ["chill", "nature"]
       responses:
         '201':
-          description: Trip created
+          description: Tạo thành công
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/TripDTO'
-
+              example:
+                id: 1
+                ownerId: 1
+                title: "Đi Đà Lạt cuối tuần"
+                location: "Đà Lạt"
+                startDate: "2024-06-01T00:00:00Z"
+                endDate: "2024-06-03T00:00:00Z"
+                maxMember: 5
+                tags: ["chill", "nature"]
+                createdAt: "2024-05-10T10:00:00Z"
     get:
-      tags: [Trip Service]
-      summary: List public trips
+      tags:
+        - Trip
+      summary: Lấy danh sách chuyến đi
       parameters:
-        - name: location
-          in: query
+        - in: query
+          name: location
           schema:
             type: string
-        - name: date
-          in: query
+        - in: query
+          name: startDate
           schema:
             type: string
-            format: date
-        - name: tag
-          in: query
+            format: date-time
+        - in: query
+          name: tags
           schema:
             type: string
+            description: Lọc theo tags (comma separated)
       responses:
         '200':
-          description: List of trips
+          description: Danh sách trips
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/TripDTO'
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TripDTO'
+                  total:
+                    type: integer
+              example:
+                data:
+                  - id: 1
+                    ownerId: 1
+                    title: "Đi Đà Lạt cuối tuần"
+                    location: "Đà Lạt"
+                    startDate: "2024-06-01T00:00:00Z"
+                    endDate: "2024-06-03T00:00:00Z"
+                    maxMember: 5
+                    tags: ["chill", "nature"]
+                    createdAt: "2024-05-10T10:00:00Z"
+                total: 1
 
   /trips/{id}:
     get:
-      tags: [Trip Service]
-      summary: Get trip details
+      tags:
+        - Trip
+      summary: Lấy chi tiết chuyến đi
       parameters:
-        - name: id
-          in: path
+        - in: path
+          name: id
           required: true
           schema:
-            type: string
-            format: uuid
+            type: integer
       responses:
         '200':
-          description: Trip details
+          description: Chi tiết trip
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/TripDTO'
-        '404':
-          description: Trip not found
-
+              example:
+                id: 1
+                ownerId: 1
+                title: "Đi Đà Lạt cuối tuần"
+                location: "Đà Lạt"
+                startDate: "2024-06-01T00:00:00Z"
+                endDate: "2024-06-03T00:00:00Z"
+                maxMember: 5
+                tags: ["chill", "nature"]
+                createdAt: "2024-05-10T10:00:00Z"
     put:
-      tags: [Trip Service]
-      summary: Update trip
+      tags:
+        - Trip
+      summary: Cập nhật chuyến đi (chỉ owner)
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       parameters:
-        - name: id
-          in: path
+        - in: path
+          name: id
           required: true
           schema:
-            type: string
-            format: uuid
+            type: integer
       requestBody:
         required: true
         content:
@@ -407,170 +313,177 @@ paths:
               properties:
                 title:
                   type: string
-                description:
-                  type: string
                 location:
                   type: string
-                startDate:
-                  type: string
-                  format: date
-                endDate:
-                  type: string
-                  format: date
-                maxMembers:
-                  type: integer
-                tags:
-                  type: array
-                  items:
-                    type: string
+            example:
+              title: "Đi Đà Lạt 4 ngày 3 đêm"
       responses:
         '200':
-          description: Trip updated
+          description: Cập nhật thành công
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/TripDTO'
-        '403':
-          description: Not owner
-
     delete:
-      tags: [Trip Service]
-      summary: Delete trip
+      tags:
+        - Trip
+      summary: Xoá chuyến đi (chỉ owner)
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       parameters:
-        - name: id
-          in: path
+        - in: path
+          name: id
           required: true
           schema:
-            type: string
-            format: uuid
+            type: integer
       responses:
-        '204':
-          description: Trip deleted
-        '403':
-          description: Not owner
+        '200':
+          description: Xoá thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+              example:
+                message: "Deleted"
 
-  # ==========================================
-  # JOIN REQUEST SERVICE (:8083)
-  # ==========================================
   /join-requests:
     post:
-      tags: [Join Request Service]
-      summary: Send join request
+      tags:
+        - Join Request
+      summary: Gửi yêu cầu tham gia chuyến đi
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required: [tripId]
               properties:
                 tripId:
-                  type: string
-                  format: uuid
-                message:
-                  type: string
-              required: [tripId]
+                  type: integer
             example:
-              tripId: "123e4567-e89b-12d3-a456-426614174000"
-              message: "Let me join please!"
+              tripId: 1
       responses:
         '201':
-          description: Request sent
+          description: Đã gửi request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/JoinRequestDTO'
-
+              example:
+                id: 1
+                tripId: 1
+                userId: 2
+                status: "pending"
+                createdAt: "2024-05-10T10:30:00Z"
     get:
-      tags: [Join Request Service]
-      summary: List join requests for a trip
+      tags:
+        - Join Request
+      summary: Lấy danh sách yêu cầu tham gia (chỉ trip owner)
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       parameters:
-        - name: tripId
-          in: query
+        - in: query
+          name: tripId
           required: true
           schema:
-            type: string
-            format: uuid
+            type: integer
       responses:
         '200':
-          description: List of requests
+          description: Danh sách join requests
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/JoinRequestDTO'
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/JoinRequestDTO'
+                  total:
+                    type: integer
+              example:
+                data:
+                  - id: 1
+                    tripId: 1
+                    userId: 2
+                    status: "pending"
+                    createdAt: "2024-05-10T10:30:00Z"
+                total: 1
 
   /join-requests/{id}/approve:
     put:
-      tags: [Join Request Service]
-      summary: Approve join request
+      tags:
+        - Join Request
+      summary: Phê duyệt yêu cầu tham gia (chỉ trip owner)
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       parameters:
-        - name: id
-          in: path
+        - in: path
+          name: id
           required: true
           schema:
-            type: string
-            format: uuid
+            type: integer
       responses:
         '200':
-          description: Request approved
+          description: Đã phê duyệt (publish event join.approved)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/JoinRequestDTO'
-        '403':
-          description: Not trip owner
+                type: object
+                properties:
+                  message:
+                    type: string
+              example:
+                message: "Approved"
 
   /join-requests/{id}/reject:
     put:
-      tags: [Join Request Service]
-      summary: Reject join request
+      tags:
+        - Join Request
+      summary: Từ chối yêu cầu tham gia (chỉ trip owner)
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       parameters:
-        - name: id
-          in: path
+        - in: path
+          name: id
           required: true
           schema:
-            type: string
-            format: uuid
+            type: integer
       responses:
         '200':
-          description: Request rejected
+          description: Đã từ chối (publish event join.rejected)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/JoinRequestDTO'
-        '403':
-          description: Not trip owner
+                type: object
+                properties:
+                  message:
+                    type: string
+              example:
+                message: "Rejected"
 
-  # ==========================================
-  # NOTIFICATION SERVICE (:8084)
-  # ==========================================
   /notifications/{userId}:
     get:
-      tags: [Notification Service]
-      summary: Get notifications for user
+      tags:
+        - Notification
+      summary: Lấy thông báo của user
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       parameters:
-        - name: userId
-          in: path
+        - in: path
+          name: userId
           required: true
           schema:
-            type: string
-            format: uuid
+            type: integer
       responses:
         '200':
-          description: List of notifications
+          description: Danh sách thông báo
           content:
             application/json:
               schema:
@@ -582,23 +495,32 @@ paths:
                       $ref: '#/components/schemas/NotificationDTO'
                   total:
                     type: integer
+              example:
+                data:
+                  - id: 1
+                    userId: 2
+                    title: "Yêu cầu được chấp nhận"
+                    content: "Bạn đã được tham gia chuyến đi Đà Lạt"
+                    isRead: false
+                    createdAt: "2024-05-10T11:00:00Z"
+                total: 1
 
   /notifications/{id}/read:
     put:
-      tags: [Notification Service]
-      summary: Mark notification as read
+      tags:
+        - Notification
+      summary: Đánh dấu thông báo đã đọc
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       parameters:
-        - name: id
-          in: path
+        - in: path
+          name: id
           required: true
           schema:
-            type: string
-            format: uuid
+            type: integer
       responses:
         '200':
-          description: Marked as read
+          description: Đánh dấu đã đọc thành công
           content:
             application/json:
               schema:
@@ -606,102 +528,252 @@ paths:
                 properties:
                   message:
                     type: string
+              example:
+                message: "Marked as read"
 
-  # ==========================================
-  # CHAT SERVICE (:8085)
-  # ==========================================
   /messages:
     get:
-      tags: [Chat Service]
-      summary: Get message history for trip
+      tags:
+        - Chat
+      summary: Lấy tin nhắn của chuyến đi
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       parameters:
-        - name: tripId
-          in: query
+        - in: query
+          name: tripId
           required: true
           schema:
-            type: string
-            format: uuid
-        - name: limit
-          in: query
-          schema:
             type: integer
-            default: 50
-        - name: offset
-          in: query
-          schema:
-            type: integer
-            default: 0
       responses:
         '200':
-          description: List of messages
+          description: Danh sách tin nhắn
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/MessageDTO'
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MessageDTO'
+                  total:
+                    type: integer
+              example:
+                data:
+                  - id: 1
+                    tripId: 1
+                    senderId: 1
+                    content: "Chào mọi người"
+                    createdAt: "2024-05-10T10:00:00Z"
+                total: 1
 
-  # ==========================================
-  # REVIEW SERVICE (:8086) - SPRINT 3
-  # ==========================================
   /reviews:
     post:
-      tags: [Review Service]
-      summary: Create a review
+      tags:
+        - Review
+      summary: Đánh giá user
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required: [tripId, targetUserId, rating, comment]
               properties:
-                revieweeId:
-                  type: string
-                  format: uuid
                 tripId:
-                  type: string
-                  format: uuid
+                  type: integer
+                targetUserId:
+                  type: integer
                 rating:
                   type: integer
                   minimum: 1
                   maximum: 5
                 comment:
                   type: string
-              required: [revieweeId, tripId, rating]
             example:
-              revieweeId: "123e4567-e89b-12d3-a456-426614174000"
-              tripId: "123e4567-e89b-12d3-a456-426614174001"
+              tripId: 1
+              targetUserId: 1
               rating: 5
-              comment: "Great trip companion!"
+              comment: "Leader cực kỳ nhiệt tình!"
       responses:
         '201':
-          description: Review created
+          description: Đánh giá thành công
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ReviewDTO'
+              example:
+                id: 1
+                tripId: 1
+                reviewerId: 2
+                targetUserId: 1
+                rating: 5
+                comment: "Leader cực kỳ nhiệt tình!"
+                createdAt: "2024-05-12T10:00:00Z"
 
   /reviews/user/{id}:
     get:
-      tags: [Review Service]
-      summary: Get reviews for user
+      tags:
+        - Review
+      summary: Lấy đánh giá về user
       parameters:
-        - name: id
-          in: path
+        - in: path
+          name: id
           required: true
           schema:
-            type: string
-            format: uuid
+            type: integer
       responses:
         '200':
-          description: List of reviews for the user
+          description: Danh sách reviews
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ReviewDTO'
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ReviewDTO'
+                  total:
+                    type: integer
+              example:
+                data:
+                  - id: 1
+                    tripId: 1
+                    reviewerId: 2
+                    targetUserId: 1
+                    rating: 5
+                    comment: "Leader cực kỳ nhiệt tình!"
+                    createdAt: "2024-05-12T10:00:00Z"
+                total: 1
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    UserDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        bio:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    TripDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+        ownerId:
+          type: integer
+        title:
+          type: string
+        location:
+          type: string
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        maxMember:
+          type: integer
+        tags:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    JoinRequestDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+        tripId:
+          type: integer
+        userId:
+          type: integer
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+        createdAt:
+          type: string
+          format: date-time
+
+    NotificationDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+        isRead:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    MessageDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+        tripId:
+          type: integer
+        senderId:
+          type: integer
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    ReviewDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+        tripId:
+          type: integer
+        reviewerId:
+          type: integer
+        targetUserId:
+          type: integer
+        rating:
+          type: integer
+        comment:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
