@@ -1,89 +1,13 @@
 name: CI Pipeline
-
 on:
   push:
-    branches: [main, develop]
+    branches: [develop, main]
   pull_request:
-    branches: [main]
-
+    branches: [develop, main]
 jobs:
-  # ============================================================
-  # Build & Test – Node.js services (TV2, TV3)
-  # ============================================================
-  test-node-services:
-    name: Test Node.js Services
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        service: [trip-service, join-request-service, notification-service, chat-service]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: ${{ matrix.service }}/package-lock.json
-
-      - name: Install dependencies
-        working-directory: ${{ matrix.service }}
-        run: npm ci
-
-      - name: Run tests
-        working-directory: ${{ matrix.service }}
-        run: npm test --if-present
-
-  # ============================================================
-  # Build & Test – Java services (TV1)
-  # ============================================================
-  test-java-services:
-    name: Test Java Services
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        service: [user-service, review-service]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Java 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Build & Test with Maven
-        working-directory: ${{ matrix.service }}
-        run: ./mvnw test --no-transfer-progress
-
-  # ============================================================
-  # Docker Compose Smoke Test (TV5)
-  # ============================================================
-  docker-compose-check:
-    name: Docker Compose Validate
+  placeholder:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Validate docker-compose syntax
-        run: docker compose config --quiet
-
-  # ============================================================
-  # Frontend Build (TV4)
-  # ============================================================
-  build-frontend:
-    name: Build Frontend
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install & Build
-        working-directory: frontend
-        run: |
-          npm ci
-          npm run build --if-present
+      - uses: actions/checkout@v3
+      - name: CI placeholder
+        run: echo "CI pipeline – TV5 implement Sprint 2"

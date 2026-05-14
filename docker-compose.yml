@@ -106,13 +106,13 @@ services:
   rabbitmq:
     image: rabbitmq:3-management
     ports:
-      - "5672:5672"    # AMQP
-      - "15672:15672"  # Management UI – demo cho giám khảo (guest/guest)
+      - "5672:5672"
+      - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - travel-buddy-network
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 10s
@@ -246,3 +246,7 @@ volumes:
   chat_db_data:
   review_db_data:
   rabbitmq_data:
+
+networks:
+  travel-buddy-network:
+    driver: bridge
