@@ -1,0 +1,100 @@
+  # ──────────────────────────────────────────────────────────────
+  # TV2 – Trip Service
+  # ──────────────────────────────────────────────────────────────
+  trip-service:
+    build: ./trip-service
+    ports:
+      - "8082:8082"
+    environment:
+      PORT: 8082
+      JWT_SECRET: ${JWT_SECRET}
+      TRUST_GATEWAY: "true"
+      TRIP_DB_HOST: trip-db
+      TRIP_DB_PORT: 5432
+      TRIP_DB_NAME: trip_db
+      TRIP_DB_USER: postgres
+      TRIP_DB_PASSWORD: secret
+    depends_on:
+      trip-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8082/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - travel-buddy-network
+    restart: on-failure
+
+  trip-db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: trip_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - trip-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - travel-buddy-network
+
+  # ──────────────────────────────────────────────────────────────
+  # TV2 – Join Request Service
+  # ──────────────────────────────────────────────────────────────
+  join-request-service:
+    build: ./join-request-service
+    ports:
+      - "8083:8083"
+    environment:
+      PORT: 8083
+      JWT_SECRET: ${JWT_SECRET}
+      TRUST_GATEWAY: "true"
+      JOIN_DB_HOST: join-db
+      JOIN_DB_PORT: 5432
+      JOIN_DB_NAME: join_db
+      JOIN_DB_USER: postgres
+      JOIN_DB_PASSWORD: secret
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      TRIP_SERVICE_URL: http://trip-service:8082
+    depends_on:
+      join-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      trip-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8083/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - travel-buddy-network
+    restart: on-failure
+
+  join-db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: join_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - join-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - travel-buddy-network
+
+# ──────────────────────────────────────────────────────────────
+# Volumes cần thêm vào section volumes: của docker-compose.yml
+# ──────────────────────────────────────────────────────────────
+# volumes:
+#   trip-db-data:
+#   join-db-data:
