@@ -19,7 +19,7 @@ app.use(express.json());
 app.use('/trips', tripRoutes);
 
 // Health check
-app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'trip-service' }));
+app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'trip-service', timestamp: new Date() }));
 
 // ── Error handler ───────────────────────────────────────────
 app.use((err, _req, res, _next) => {

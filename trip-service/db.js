@@ -12,7 +12,6 @@ pool.connect()
   .then(() => console.log('Ket noi PostgreSQL thanh cong!'))
   .catch(err => {
     console.error('Ket noi that bai:', err.message);
-    process.exit(1);
   });
 
 module.exports = pool;

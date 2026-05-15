@@ -15,7 +15,7 @@ app.use(morgan('dev'));
 app.use(express.json());
 
 app.use('/join-requests', joinRoutes);
-app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'join-request-service' }));
+app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'join-request-service', timestamp: new Date() }));
 
 app.use((err, _req, res, _next) => {
   console.error(err.stack);
