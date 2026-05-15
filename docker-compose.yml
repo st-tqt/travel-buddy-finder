@@ -245,22 +245,22 @@ services:
       - travel-buddy-network
     restart: on-failure
 
-  review-service:
-    build: ./review-service
-    container_name: review-service
-    ports:
-      - "8086:8086"
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://review-db:5432/review_db
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: secret
-      APP_JWT_SECRET: ${JWT_SECRET}
-    depends_on:
-      review-db:
-        condition: service_healthy
-    networks:
-      - travel-buddy-network
-    restart: on-failure
+  # review-service:
+  #   build: ./review-service
+  #   container_name: review-service
+  #   ports:
+  #     - "8086:8086"
+  #   environment:
+  #     SPRING_DATASOURCE_URL: jdbc:postgresql://review-db:5432/review_db
+  #     SPRING_DATASOURCE_USERNAME: postgres
+  #     SPRING_DATASOURCE_PASSWORD: secret
+  #     APP_JWT_SECRET: ${JWT_SECRET}
+  #   depends_on:
+  #     review-db:
+  #       condition: service_healthy
+  #   networks:
+  #     - travel-buddy-network
+  #   restart: on-failure
 
   # ===========================================================================
   # FRONTEND
