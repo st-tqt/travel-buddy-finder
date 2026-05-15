@@ -2,14 +2,18 @@ package com.travelbuddy.user.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
- * Entity User – bảng "users" trong PostgreSQL
- *
+ * Entity User – bảng "users" trong PostgreSQL.
  * JWT Payload chuẩn toàn nhóm (TV3 leader quy định):
- *   { userId: user.id, email: user.email, iat, exp }
+ *   { "userId": user.id, "email": user.email, "iat": ..., "exp": ... }
  */
 @Entity
 @Table(name = "users")
@@ -24,10 +28,18 @@ public class User {
     private String email;
 
     @Column(nullable = false)
-    private String password;   // BCrypt hash
+    private String password; // BCrypt hash – không bao giờ trả về client
 
-    @Column(name = "full_name")
-    private String fullName;
+    @Column(name = "name", nullable = false)
+    private String name;
+
+    @Column(columnDefinition = "TEXT")
+    private String bio;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    @Builder.Default
+    private List<String> tags = new ArrayList<>();
 
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;

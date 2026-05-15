@@ -1,0 +1,60 @@
+{
+  "info": {
+    "_postman_id": "402eb4b6-7647-4148-bc69-2f22cde12093",
+    "name": "Travel Buddy Finder - Notification Service",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get Notifications",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8084/notifications/1",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8084",
+          "path": [
+            "notifications",
+            "1"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Mark as Read",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8084/notifications/{{notification_id}}/read",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8084",
+          "path": [
+            "notifications",
+            "{{notification_id}}",
+            "read"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

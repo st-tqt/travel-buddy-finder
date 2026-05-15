@@ -1,35 +1,15 @@
 ## Mô tả thay đổi
 
-> Tóm tắt ngắn gọn những gì PR này làm.
-
 ## Loại thay đổi
+- [ ] feat / fix / docs / chore
 
-- [ ] 🐛 Bug fix
-- [ ] ✨ Feature mới
-- [ ] ♻️ Refactor
-- [ ] 📄 Docs
-- [ ] 🔧 Config / DevOps
+## Service bị ảnh hưởng
+- [ ] user-service / trip-service / join-request-service
+- [ ] notification-service / chat-service / review-service
+- [ ] frontend / api-gateway / docker
 
-## Service liên quan
+## Test
+- [ ] Pass Postman
+- [ ] docker-compose up không lỗi
 
-- [ ] user-service (TV1)
-- [ ] trip-service (TV2)
-- [ ] join-request-service (TV2)
-- [ ] notification-service (TV3)
-- [ ] chat-service (TV3)
-- [ ] review-service (TV1)
-- [ ] frontend (TV4)
-- [ ] api-gateway
-- [ ] docker / devops (TV5)
-
-## Checklist
-
-- [ ] Code chạy được trên local
-- [ ] `docker-compose up` không bị lỗi
-- [ ] Đã test với Postman (hoặc unit test)
-- [ ] Không commit file `.env`
-- [ ] API endpoint khớp với `docs/api-contract.yaml`
-
-## Screenshots / Logs (nếu có)
-
-> Paste screenshot hoặc log output ở đây.
+## Lưu ý cho reviewer
