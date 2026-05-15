@@ -269,7 +269,7 @@ services:
     build: ./frontend
     container_name: frontend
     ports:
-      - "5173:5173"
+      - "5173:80"
     environment:
       VITE_API_URL: http://localhost:3000
     # Note: api-gateway chưa có trong tuần 1, sẽ thêm depends_on vào tuần 2

@@ -30,6 +30,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints
                 .requestMatchers(HttpMethod.POST, "/auth/register", "/auth/login").permitAll()
+                .requestMatchers(HttpMethod.GET, "/health").permitAll()
                 // Protected endpoints
                 .requestMatchers(HttpMethod.GET, "/users/**").authenticated()
                 .anyRequest().authenticated()
