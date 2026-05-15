@@ -4,4 +4,4 @@ COPY package*.json ./
 RUN npm install --production
 COPY . .
 EXPOSE 8082
-CMD ["node", "src/app.js"]
+CMD ["npm", "start"]
