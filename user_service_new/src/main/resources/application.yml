@@ -1,0 +1,13 @@
+
+spring:
+  application:
+    name: USER-SERVICE
+keycloak:
+  auth-server-url: http://localhost:8080
+  realm: SHOP_NEW
+  resource: backend
+  credentials:
+    secret: '7Z6NxiN9N2D1Nt8O0e17LUloLFbAVqgl'
+server:
+  port: 9000
+

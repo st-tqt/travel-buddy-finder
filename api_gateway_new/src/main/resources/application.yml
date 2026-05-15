@@ -1,0 +1,27 @@
+server:
+  port: 6000
+
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      # Sửa đổi namespace theo đúng cảnh báo hệ thống của bạn
+      server:
+        webflux:
+          routes:
+            - id: user-service
+              uri: http://localhost:9000
+              predicates:
+                - Path=/api/user/**
+              metadata:
+                authenticated: false
+
+  # Cấu hình Security phải nằm đúng cấp bậc thụt lề của Spring
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/realms/shop_new
+          jwk-set-uri: http://localhost:8080/realms/shop_new/protocol/openid-connect/certs
