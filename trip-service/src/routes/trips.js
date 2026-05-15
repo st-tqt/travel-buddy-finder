@@ -2,13 +2,23 @@
 
 const express = require('express');
 const router  = express.Router();
+const { Op } = require('sequelize');
 const authMiddleware = require('../../../shared/middleware/authMiddleware');
+const { Trip } = require('../models/Trip');
 
 // ── POST /trips – Tạo trip mới (cần JWT) ────────────────────
 router.post('/', authMiddleware, async (req, res) => {
   try {
-    // TODO TV2: validate body, gọi Trip.create({ ...req.body, ownerId: req.user.userId })
-    res.status(201).json({ message: 'TODO: create trip' });
+    const { title, location, startDate, endDate } = req.body;
+    if (!title || !location || !startDate) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const trip = await Trip.create({
+      ...req.body,
+      ownerId: req.user.userId
+    });
+    res.status(201).json(trip);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -18,8 +28,21 @@ router.post('/', authMiddleware, async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const { location, date, tag } = req.query;
-    // TODO TV2: Trip.findAll({ where: { ...filters } })
-    res.json({ message: 'TODO: list trips', filters: { location, date, tag } });
+    const whereClause = { isPublic: true };
+
+    if (location) {
+      whereClause.location = { [Op.iLike]: `%${location}%` };
+    }
+    if (date) {
+      whereClause.startDate = { [Op.lte]: date };
+      whereClause.endDate = { [Op.gte]: date };
+    }
+    if (tag) {
+      whereClause.tags = { [Op.contains]: [tag] };
+    }
+
+    const trips = await Trip.findAll({ where: whereClause });
+    res.status(200).json(trips);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -28,8 +51,9 @@ router.get('/', async (req, res) => {
 // ── GET /trips/:id – Chi tiết trip ──────────────────────────
 router.get('/:id', async (req, res) => {
   try {
-    // TODO TV2: Trip.findByPk(req.params.id)
-    res.json({ message: 'TODO: get trip by id', id: req.params.id });
+    const trip = await Trip.findByPk(req.params.id);
+    if (!trip) return res.status(404).json({ error: 'Trip not found' });
+    res.status(200).json(trip);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -38,8 +62,12 @@ router.get('/:id', async (req, res) => {
 // ── PUT /trips/:id – Cập nhật trip (cần JWT, chỉ owner) ─────
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
-    // TODO TV2: kiểm tra trip.ownerId === req.user.userId
-    res.json({ message: 'TODO: update trip', id: req.params.id });
+    const trip = await Trip.findByPk(req.params.id);
+    if (!trip) return res.status(404).json({ error: 'Trip not found' });
+    if (trip.ownerId !== req.user.userId) return res.status(403).json({ error: 'Forbidden' });
+
+    await trip.update(req.body);
+    res.status(200).json(trip);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -48,8 +76,12 @@ router.put('/:id', authMiddleware, async (req, res) => {
 // ── DELETE /trips/:id – Xoá trip (cần JWT, chỉ owner) ───────
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
-    // TODO TV2: kiểm tra trip.ownerId === req.user.userId
-    res.status(204).send();
+    const trip = await Trip.findByPk(req.params.id);
+    if (!trip) return res.status(404).json({ error: 'Trip not found' });
+    if (trip.ownerId !== req.user.userId) return res.status(403).json({ error: 'Forbidden' });
+
+    await trip.destroy();
+    res.status(200).json({ message: 'Deleted' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
