@@ -1,0 +1,30 @@
+import React from 'react';
+
+export default function NotificationItem({ notification, onRead }) {
+  const getIcon = () => {
+    switch (notification.type) {
+      case 'JOIN_APPROVED': return '✅';
+      case 'JOIN_REJECTED': return '❌';
+      default: return '🔔';
+    }
+  };
+
+  return (
+    <div 
+      onClick={() => !notification.isRead && onRead(notification.id)}
+      className={`p-4 border-b flex gap-4 cursor-pointer transition ${notification.isRead ? 'bg-white hover:bg-gray-50' : 'bg-blue-50 hover:bg-blue-100'}`}
+    >
+      <div className="text-2xl pt-1">{getIcon()}</div>
+      <div className="flex-1">
+        <h4 className="font-semibold text-gray-900">{notification.title}</h4>
+        <p className="text-gray-700 text-sm mt-1">{notification.message}</p>
+        <p className="text-gray-400 text-xs mt-2">{new Date(notification.createdAt).toLocaleString()}</p>
+      </div>
+      {!notification.isRead && (
+        <div className="flex items-center">
+          <span className="w-3 h-3 bg-blue-600 rounded-full"></span>
+        </div>
+      )}
+    </div>
+  );
+}
