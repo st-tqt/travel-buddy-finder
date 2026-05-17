@@ -5,9 +5,10 @@ import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 
 async function enableMocking() {
-  if (process.env.NODE_ENV !== 'development') {
-    return
-  }
+  // Always enable mocking for the Sprint 2 demo
+  // if (!import.meta.env.DEV) {
+  //   return
+  // }
 
   const { worker } = await import('./mocks/browser')
   

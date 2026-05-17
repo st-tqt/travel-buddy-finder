@@ -5,8 +5,9 @@ WORKDIR /app
 COPY shared/ /shared/
 
 COPY trip-service/package*.json ./
-RUN npm ci --only=production
+RUN npm install --omit=dev
 
 COPY trip-service/src ./src
 EXPOSE 8082
+ENV NODE_PATH=/app/node_modules
 CMD ["node", "src/app.js"]

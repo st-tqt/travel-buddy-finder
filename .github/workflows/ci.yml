@@ -1,13 +1,41 @@
 name: CI Pipeline
+
 on:
   push:
-    branches: [develop, main]
+    branches: [ main, develop ]
   pull_request:
-    branches: [develop, main]
+    branches: [ main, develop ]
+
 jobs:
-  placeholder:
+  test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20.x]
+
     steps:
-      - uses: actions/checkout@v3
-      - name: CI placeholder
-        run: echo "CI pipeline – TV5 implement Sprint 2"
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+
+    - name: Install Dependencies and Run Tests
+      run: |
+        for service in user-service trip-service join-request-service chat-service notification-service; do
+          echo "=================================="
+          echo "Running tests in $service"
+          echo "=================================="
+          cd $service
+          if [ -f package.json ]; then
+            npm install
+            npm test
+          elif [ -f pom.xml ]; then
+            mvn test
+          else
+            echo "No package.json or pom.xml found. Skipping."
+          fi
+          cd ..
+        done

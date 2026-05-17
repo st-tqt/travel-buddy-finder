@@ -2,49 +2,6 @@ import { http, HttpResponse, delay } from 'msw'
 
 export const handlers = [
   // ==========================================
-  // [User Service handlers]
-  // ==========================================
-  http.post('/api/auth/register', async ({ request }) => {
-    const body = await request.json()
-    await delay(500)
-    return HttpResponse.json({
-      id: "uuid-1",
-      name: body.name,
-      email: body.email,
-      createdAt: new Date().toISOString()
-    }, { status: 201 })
-  }),
-
-  http.post('/api/auth/login', async ({ request }) => {
-    const { email, password } = await request.json()
-    await delay(500)
-    
-    if (email === "test@gmail.com" && password === "123456") {
-      return HttpResponse.json({
-        accessToken: "mock-jwt-token",
-        user: {
-          id: "uuid-1",
-          name: "Test User",
-          email: "test@gmail.com"
-        }
-      })
-    }
-    
-    return HttpResponse.json({ error: "Invalid credentials" }, { status: 401 })
-  }),
-
-  http.get('/api/users/:id', async ({ params }) => {
-    await delay(500)
-    return HttpResponse.json({
-      id: params.id,
-      name: "Mock User",
-      email: "mock@gmail.com",
-      avatar: "https://i.pravatar.cc/150?u=" + params.id,
-      bio: "This is a mock user profile."
-    })
-  }),
-
-  // ==========================================
   // [Trip Service handlers]
   // ==========================================
   http.get('/api/trips', async () => {

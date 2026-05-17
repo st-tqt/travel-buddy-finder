@@ -2,115 +2,34 @@ version: '3.9'
 
 services:
   # ============================================================
-  # DATABASES – mỗi service có DB riêng (Database per Service pattern)
+  # TẦNG 1: DATABASES & MESSAGE BROKER
   # ============================================================
-  user-db:
+  postgres-db:
     image: postgres:15-alpine
     environment:
-      POSTGRES_DB: user_db
-      POSTGRES_USER: ${USER_DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${USER_DB_PASSWORD:-password}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
     ports:
       - "5432:5432"
     volumes:
-      - user_db_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - travel-buddy-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  trip-db:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_DB: trip_db
-      POSTGRES_USER: ${TRIP_DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${TRIP_DB_PASSWORD:-password}
-    ports:
-      - "5433:5432"
-    volumes:
-      - trip_db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  join-db:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_DB: join_db
-      POSTGRES_USER: ${JOIN_DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${JOIN_DB_PASSWORD:-password}
-    ports:
-      - "5434:5432"
-    volumes:
-      - join_db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  notification-db:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_DB: notification_db
-      POSTGRES_USER: ${NOTIF_DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${NOTIF_DB_PASSWORD:-password}
-    ports:
-      - "5435:5432"
-    volumes:
-      - notification_db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  chat-db:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_DB: chat_db
-      POSTGRES_USER: ${CHAT_DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${CHAT_DB_PASSWORD:-password}
-    ports:
-      - "5436:5432"
-    volumes:
-      - chat_db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  review-db:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_DB: review_db
-      POSTGRES_USER: ${REVIEW_DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${REVIEW_DB_PASSWORD:-password}
-    ports:
-      - "5437:5432"
-    volumes:
-      - review_db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # ============================================================
-  # MESSAGE QUEUE – TV3 setup
-  # ============================================================
   rabbitmq:
     image: rabbitmq:3-management
     ports:
       - "5672:5672"
       - "15672:15672"
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
     networks:
       - travel-buddy-network
     healthcheck:
@@ -120,55 +39,68 @@ services:
       retries: 5
 
   # ============================================================
-  # MICROSERVICES
+  # TẦNG 2: MICROSERVICES
   # ============================================================
   user-service:
     build: ./user-service
     ports:
-      - "${USER_SERVICE_PORT:-8081}:8081"
+      - "8081:8081"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://user-db:5432/user_db
-      SPRING_DATASOURCE_USERNAME: ${USER_DB_USER:-postgres}
-      SPRING_DATASOURCE_PASSWORD: ${USER_DB_PASSWORD:-password}
-      JWT_SECRET: ${JWT_SECRET}
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-db:5432/user_db
+      - SPRING_DATASOURCE_USERNAME=${DB_USER:-postgres}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD:-password}
+      - JWT_SECRET=${JWT_SECRET}
+      - TRUST_GATEWAY=true
+    networks:
+      - travel-buddy-network
     depends_on:
-      user-db:
+      postgres-db:
         condition: service_healthy
     restart: unless-stopped
 
   trip-service:
-    build: ./trip-service
+    build:
+      context: .
+      dockerfile: ./trip-service/Dockerfile
     ports:
-      - "${TRIP_SERVICE_PORT:-8082}:8082"
+      - "8082:8082"
     environment:
-      DB_HOST: trip-db
-      DB_PORT: 5432
-      DB_NAME: trip_db
-      DB_USER: ${TRIP_DB_USER:-postgres}
-      DB_PASSWORD: ${TRIP_DB_PASSWORD:-password}
-      JWT_SECRET: ${JWT_SECRET}
+      - TRIP_DB_HOST=postgres-db
+      - TRIP_DB_PORT=5432
+      - TRIP_DB_NAME=trip_db
+      - TRIP_DB_USER=${DB_USER:-postgres}
+      - TRIP_DB_PASSWORD=${DB_PASSWORD:-password}
+      - JWT_SECRET=${JWT_SECRET}
+      - TRUST_GATEWAY=true
+    networks:
+      - travel-buddy-network
     depends_on:
-      trip-db:
+      postgres-db:
         condition: service_healthy
     restart: unless-stopped
 
   join-request-service:
-    build: ./join-request-service
+    build:
+      context: .
+      dockerfile: ./join-request-service/Dockerfile
     ports:
-      - "${JOIN_SERVICE_PORT:-8083}:8083"
+      - "8083:8083"
     environment:
-      DB_HOST: join-db
-      DB_PORT: 5432
-      DB_NAME: join_db
-      DB_USER: ${JOIN_DB_USER:-postgres}
-      DB_PASSWORD: ${JOIN_DB_PASSWORD:-password}
-      JWT_SECRET: ${JWT_SECRET}
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5672
-      RABBITMQ_USER: ${RABBITMQ_USER:-guest}
-      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      - JOIN_DB_HOST=postgres-db
+      - JOIN_DB_PORT=5432
+      - JOIN_DB_NAME=join_db
+      - JOIN_DB_USER=${DB_USER:-postgres}
+      - JOIN_DB_PASSWORD=${DB_PASSWORD:-password}
+      - JWT_SECRET=${JWT_SECRET}
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=${RABBITMQ_USER:-guest}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
+      - TRUST_GATEWAY=true
+    networks:
+      - travel-buddy-network
     depends_on:
-      join-db:
+      postgres-db:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
@@ -177,74 +109,110 @@ services:
   notification-service:
     build: ./notification-service
     ports:
-      - "${NOTIFICATION_SERVICE_PORT:-8084}:8084"
+      - "8084:8084"
     environment:
-      NOTIFICATION_DB_HOST: notification-db
-      NOTIFICATION_DB_PORT: 5432
-      NOTIFICATION_DB_NAME: notification_db
-      NOTIFICATION_DB_USER: ${NOTIFICATION_DB_USER:-postgres}
-      NOTIFICATION_DB_PASSWORD: ${NOTIFICATION_DB_PASSWORD:-secret}
-      JWT_SECRET: ${JWT_SECRET}
-      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
-      RABBITMQ_EXCHANGE: join-request-events
-      RABBITMQ_QUEUE: notification.queue
+      - NOTIFICATION_DB_HOST=postgres-db
+      - NOTIFICATION_DB_PORT=5432
+      - NOTIFICATION_DB_NAME=notification_db
+      - NOTIFICATION_DB_USER=${DB_USER:-postgres}
+      - NOTIFICATION_DB_PASSWORD=${DB_PASSWORD:-password}
+      - JWT_SECRET=${JWT_SECRET}
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - TRUST_GATEWAY=true
+    networks:
+      - travel-buddy-network
     depends_on:
-      notification-db:
+      postgres-db:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
     restart: unless-stopped
 
   chat-service:
-    build: ./chat-service
+    build:
+      context: .
+      dockerfile: ./chat-service/Dockerfile
     ports:
-      - "${CHAT_SERVICE_PORT:-8085}:8085"
+      - "8085:8085"
     environment:
-      DB_HOST: chat-db
-      DB_PORT: 5432
-      DB_NAME: chat_db
-      DB_USER: ${CHAT_DB_USER:-postgres}
-      DB_PASSWORD: ${CHAT_DB_PASSWORD:-password}
-      JWT_SECRET: ${JWT_SECRET}
+      - CHAT_DB_HOST=postgres-db
+      - CHAT_DB_PORT=5432
+      - CHAT_DB_NAME=chat_db
+      - CHAT_DB_USER=${DB_USER:-postgres}
+      - CHAT_DB_PASSWORD=${DB_PASSWORD:-password}
+      - JWT_SECRET=${JWT_SECRET}
+      - TRUST_GATEWAY=true
+    networks:
+      - travel-buddy-network
     depends_on:
-      chat-db:
+      postgres-db:
         condition: service_healthy
     restart: unless-stopped
 
-  review-service:
-    build: ./review-service
-    ports:
-      - "${REVIEW_SERVICE_PORT:-8086}:8086"
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://review-db:5432/review_db
-      SPRING_DATASOURCE_USERNAME: ${REVIEW_DB_USER:-postgres}
-      SPRING_DATASOURCE_PASSWORD: ${REVIEW_DB_PASSWORD:-password}
-      JWT_SECRET: ${JWT_SECRET}
-    depends_on:
-      review-db:
-        condition: service_healthy
-    restart: unless-stopped
+#   review-service:
+#     build: ./review-service
+#     ports:
+#       - "8086:8086"
+#     environment:
+#       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-db:5432/review_db
+#       - SPRING_DATASOURCE_USERNAME=${DB_USER:-postgres}
+#       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD:-password}
+#       - JWT_SECRET=${JWT_SECRET}
+#       - TRUST_GATEWAY=true
+#     networks:
+#       - travel-buddy-network
+#     depends_on:
+#       postgres-db:
+#         condition: service_healthy
+#     restart: unless-stopped
 
-  frontend:
-    build: ./frontend
+  # ============================================================
+  # TẦNG 3: API GATEWAY
+  # ============================================================
+  api-gateway:
+    build: ./api-gateway
     ports:
       - "3000:3000"
     environment:
-      VITE_API_BASE_URL: http://localhost:${API_GATEWAY_PORT:-8080}
+      - PORT=3000
+      - JWT_SECRET=${JWT_SECRET}
+      - USER_SERVICE_URL=http://user-service:8081
+      - TRIP_SERVICE_URL=http://trip-service:8082
+      - JOIN_SERVICE_URL=http://join-request-service:8083
+      - NOTIFICATION_SERVICE_URL=http://notification-service:8084
+      - CHAT_SERVICE_URL=http://chat-service:8085
+      - REVIEW_SERVICE_URL=http://review-service:8086
+    networks:
+      - travel-buddy-network
     depends_on:
       - user-service
+      - trip-service
+      - join-request-service
+      - notification-service
+      - chat-service
     restart: unless-stopped
 
-# ============================================================
-# VOLUMES
-# ============================================================
+  # ============================================================
+  # TẦNG 4: FRONTEND
+  # ============================================================
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:3000
+    networks:
+      - travel-buddy-network
+    depends_on:
+      - api-gateway
+    restart: unless-stopped
+
 volumes:
-  user_db_data:
-  trip_db_data:
-  join_db_data:
-  notification_db_data:
-  chat_db_data:
-  review_db_data:
+  postgres_data:
   rabbitmq_data:
 
 networks:
