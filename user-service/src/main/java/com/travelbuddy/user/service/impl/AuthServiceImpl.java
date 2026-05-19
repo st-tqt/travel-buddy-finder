@@ -30,16 +30,25 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public UserDTO register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
+        // Trim email before any processing
+        String normalizedEmail = request.getEmail().trim().toLowerCase();
+
+        // Reject whitespace-only password (defence beyond @NotBlank)
+        if (request.getPassword().isBlank()) {
+            throw new com.travelbuddy.user.exception.InvalidCredentialsException(
+                    "Password không được chỉ chứa khoảng trắng");
+        }
+
+        if (userRepository.existsByEmail(normalizedEmail)) {
             throw new com.travelbuddy.user.exception.EmailAlreadyExistsException(
-                    "Email " + request.getEmail() + " đã được sử dụng");
+                    "Email " + normalizedEmail + " đã được sử dụng");
         }
 
         User user = User.builder()
-                .name(request.getName())
-                .email(request.getEmail())
+                .name(request.getName().trim())
+                .email(normalizedEmail)
                 .password(passwordEncoder.encode(request.getPassword()))
-                .bio(request.getBio())
+                .bio(request.getBio() != null ? request.getBio().trim() : null)
                 .tags(request.getTags() != null ? request.getTags() : new java.util.ArrayList<>())
                 .build();
 
@@ -57,7 +66,10 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthResponse login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
+        // Trim email để khớp với email đã normalize khi register
+        String normalizedEmail = request.getEmail().trim().toLowerCase();
+
+        User user = userRepository.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new com.travelbuddy.user.exception.InvalidCredentialsException(
                         "Email hoặc password không đúng"));
 

@@ -8,10 +8,16 @@ spring:
     url: ${REVIEW_DB_URL:jdbc:postgresql://localhost:5432/review_db}
     username: ${REVIEW_DB_USERNAME:postgres}
     password: ${REVIEW_DB_PASSWORD:secret}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false   # tắt để tránh log query nhạy cảm
 
 app:
   jwt:

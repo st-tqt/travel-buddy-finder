@@ -1,0 +1,737 @@
+{
+  "info": {
+    "_postman_id": "tbf-week3-review-2026",
+    "name": "Travel Buddy Finder API - Week 3",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "auth_token",
+      "value": ""
+    },
+    {
+      "key": "auth_token_B",
+      "value": ""
+    },
+    {
+      "key": "userIdA",
+      "value": ""
+    },
+    {
+      "key": "userIdB",
+      "value": ""
+    },
+    {
+      "key": "current_trip_id",
+      "value": ""
+    },
+    {
+      "key": "requestId",
+      "value": ""
+    },
+    {
+      "key": "review_id",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Flow 1 - Auth",
+      "item": [
+        {
+          "name": "01 POST /auth/register (User A)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"201 Created\", function(){ pm.response.to.have.status(201); });",
+                  "var d=pm.response.json(); if(d.id) pm.collectionVariables.set(\"userIdA\",d.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"fullName\":\"User A\",\"email\":\"usera_w3@test.com\",\"password\":\"password123\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            }
+          }
+        },
+        {
+          "name": "02 POST /auth/login (User A) - save token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", function(){ pm.response.to.have.status(200); });",
+                  "var d=pm.response.json(); var t=d.accessToken||d.token;",
+                  "if(t) pm.collectionVariables.set(\"auth_token\",t);",
+                  "if(d.user&&d.user.id) pm.collectionVariables.set(\"userIdA\",d.user.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"usera_w3@test.com\",\"password\":\"password123\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "03 POST /auth/register (User B)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"201 Created\", function(){ pm.response.to.have.status(201); });",
+                  "var d=pm.response.json(); if(d.id) pm.collectionVariables.set(\"userIdB\",d.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"fullName\":\"User B\",\"email\":\"userb_w3@test.com\",\"password\":\"password123\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            }
+          }
+        },
+        {
+          "name": "04 POST /auth/login (User B) - save tokenB",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", function(){ pm.response.to.have.status(200); });",
+                  "var d=pm.response.json(); var t=d.accessToken||d.token;",
+                  "if(t) pm.collectionVariables.set(\"auth_token_B\",t);",
+                  "if(d.user&&d.user.id) pm.collectionVariables.set(\"userIdB\",d.user.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"userb_w3@test.com\",\"password\":\"password123\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Flow 2 - Trip CRUD",
+      "item": [
+        {
+          "name": "05 POST /trips (User A)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"201 Created\", function(){ pm.response.to.have.status(201); });",
+                  "var d=pm.response.json(); var id=d.id||(d.trip&&d.trip.id);",
+                  "if(id) pm.collectionVariables.set(\"current_trip_id\",id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\":\"Da Lat W3\",\"description\":\"Test week 3\",\"location\":\"Da Lat\",\"startDate\":\"2026-08-01\",\"endDate\":\"2026-08-05\",\"maxMembers\":5}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trips",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trips"
+              ]
+            }
+          }
+        },
+        {
+          "name": "06 GET /trips",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", function(){ pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/trips",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trips"
+              ]
+            }
+          }
+        },
+        {
+          "name": "07 GET /trips/:id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", function(){ pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/trips/{{current_trip_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "trips",
+                "{{current_trip_id}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Flow 3 - Join + Notification",
+      "item": [
+        {
+          "name": "08 POST /join-requests (User B)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"201 Created\", function(){ pm.response.to.have.status(201); });",
+                  "var d=pm.response.json(); var id=d.id||(d.request&&d.request.id);",
+                  "if(id) pm.collectionVariables.set(\"requestId\",id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token_B}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"tripId\":\"{{current_trip_id}}\",\"message\":\"Cho minh tham gia!\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/join-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "join-requests"
+              ]
+            }
+          }
+        },
+        {
+          "name": "09 PUT /join-requests/:id/approve (User A)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", function(){ pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/join-requests/{{requestId}}/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "join-requests",
+                "{{requestId}}",
+                "approve"
+              ]
+            }
+          }
+        },
+        {
+          "name": "10 GET /notifications/:userId (User B)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", function(){ pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token_B}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/{{userIdB}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "{{userIdB}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Flow 4 - Review Service",
+      "item": [
+        {
+          "name": "11 GET /reviews/health (public)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", function(){ pm.response.to.have.status(200); });",
+                  "var d=pm.response.json();",
+                  "pm.test(\"status=ok\", function(){ pm.expect(d.status).to.eql(\"ok\"); });",
+                  "pm.test(\"service=review-service\", function(){ pm.expect(d.service).to.eql(\"review-service\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reviews",
+                "health"
+              ]
+            }
+          }
+        },
+        {
+          "name": "12 POST /reviews - 201 Created",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"201 Created\", function(){ pm.response.to.have.status(201); });",
+                  "var d=pm.response.json();",
+                  "pm.test(\"has id\", function(){ pm.expect(d.id).to.be.a(\"string\"); });",
+                  "pm.test(\"rating=5\", function(){ pm.expect(d.rating).to.eql(5); });",
+                  "pm.test(\"has comment\", function(){ pm.expect(d.comment).to.be.a(\"string\"); });",
+                  "pm.test(\"has createdAt\", function(){ pm.expect(d.createdAt).to.exist; });",
+                  "pm.collectionVariables.set(\"review_id\", d.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"tripId\":\"{{current_trip_id}}\",\"targetUserId\":\"{{userIdB}}\",\"rating\":5,\"comment\":\"Tuyet voi! Ban dong hanh tot lam.\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reviews"
+              ]
+            }
+          }
+        },
+        {
+          "name": "13 POST /reviews - 409 Duplicate",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"409 Conflict\", function(){ pm.response.to.have.status(409); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"tripId\":\"{{current_trip_id}}\",\"targetUserId\":\"{{userIdB}}\",\"rating\":4,\"comment\":\"Lan 2 bi 409\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reviews"
+              ]
+            }
+          }
+        },
+        {
+          "name": "14 POST /reviews - 400 Self-review",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"400 Self-review\", function(){ pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"tripId\":\"{{current_trip_id}}\",\"targetUserId\":\"{{userIdA}}\",\"rating\":5,\"comment\":\"Self review\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reviews"
+              ]
+            }
+          }
+        },
+        {
+          "name": "15 POST /reviews - 401 No JWT",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"401 Unauthorized\", function(){ pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"tripId\":\"{{current_trip_id}}\",\"targetUserId\":\"{{userIdB}}\",\"rating\":3,\"comment\":\"No token\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reviews"
+              ]
+            }
+          }
+        },
+        {
+          "name": "16 POST /reviews - 400 Invalid rating=6",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"400 Bad Request\", function(){ pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"tripId\":\"{{current_trip_id}}\",\"targetUserId\":\"{{userIdB}}\",\"rating\":6,\"comment\":\"Rating qua 5\"}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reviews"
+              ]
+            }
+          }
+        },
+        {
+          "name": "17 GET /reviews/user/:id - 200 with averageRating",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", function(){ pm.response.to.have.status(200); });",
+                  "var d=pm.response.json();",
+                  "pm.test(\"data is array\", function(){ pm.expect(d.data).to.be.an(\"array\"); });",
+                  "pm.test(\"has total\", function(){ pm.expect(d.total).to.be.a(\"number\"); });",
+                  "pm.test(\"has averageRating\", function(){ pm.expect(d.averageRating).to.be.a(\"number\"); });",
+                  "pm.test(\"averageRating max 1 decimal\", function(){ var s=d.averageRating.toString(); var dec=s.includes(\".\")?s.split(\".\")[1].length:0; pm.expect(dec).to.be.at.most(1); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews/user/{{userIdB}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reviews",
+                "user",
+                "{{userIdB}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Gateway Health",
+      "item": [
+        {
+          "name": "GET /health (Gateway)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", function(){ pm.response.to.have.status(200); });",
+                  "pm.test(\"service=api-gateway\", function(){ pm.expect(pm.response.json().service).to.eql(\"api-gateway\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

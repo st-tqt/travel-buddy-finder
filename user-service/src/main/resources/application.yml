@@ -10,15 +10,21 @@ spring:
     username: ${USER_DB_USERNAME:postgres}
     password: ${USER_DB_PASSWORD:secret}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
 
   jpa:
     hibernate:
       ddl-auto: update       # dùng 'validate' khi production
-    show-sql: true
+    show-sql: false          # tắt để tránh log query có data nhạy cảm
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
+        format_sql: false
 
 # ⭐ JWT config – TV3 leader quy định payload: { userId, email, iat, exp }
 app:
