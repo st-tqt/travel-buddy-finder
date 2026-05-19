@@ -24,37 +24,19 @@ router.get('/:userId', authMiddleware, async (req, res) => {
 
     const offset = (page - 1) * limit;
 
-    const notifications = await Notification.findAll({
-      where: { userId },
-      order: [['createdAt', 'DESC']]
-    });
+    const [notificationsResult, unreadCount] = await Promise.all([
+      Notification.findAndCountAll({
+        where: { userId },
+        order: [['createdAt', 'DESC']],
+        limit,
+        offset
+      }),
+      Notification.count({ where: { userId, isRead: false } })
+    ]);
 
     res.json({
-      data: notifications,
-      total: notifications.length
-    });
-  } catch (error) {
-    console.error("Error fetching notifications:", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// PUT /notifications/:id/read
-router.put('/:id/read', authMiddleware, async (req, res) => {
-=======
-      where: { userId },
-      order: [['createdAt', 'DESC']],
-      limit,
-      offset
-    });
-
-    const unreadCount = await Notification.count({
-      where: { userId, isRead: false }
-    });
-
-    res.json({
-      data: notifications,
-      total: notifications.length,
+      data: notificationsResult.rows,
+      total: notificationsResult.count,
       unreadCount,
       page,
       limit
@@ -82,7 +64,6 @@ router.get('/:userId/unread-count', authMiddleware, async (req, res, next) => {
 
 // PUT /notifications/:id/read
 router.put('/:id/read', authMiddleware, async (req, res, next) => {
->>>>>>> Stashed changes
   try {
     const { id } = req.params;
     
@@ -101,8 +82,20 @@ router.put('/:id/read', authMiddleware, async (req, res, next) => {
 
     res.json({ message: "Marked as read" });
   } catch (error) {
-    console.error("Error updating notification:", error);
-    res.status(500).json({ error: "Internal server error" });
+    next(error);
+  }
+});
+
+// PUT /notifications/read-all
+router.put('/read-all', authMiddleware, async (req, res, next) => {
+  try {
+    const [updatedCount] = await Notification.update(
+      { isRead: true },
+      { where: { userId: req.user.userId.toString(), isRead: false } }
+    );
+    res.json({ message: "All notifications marked as read" });
+  } catch (error) {
+    next(error);
   }
 });
 

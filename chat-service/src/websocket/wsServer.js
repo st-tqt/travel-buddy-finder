@@ -39,6 +39,9 @@ function initWsServer(httpServer) {
       return;
     }
 
+    ws.isAlive = true;
+    ws.on('pong', () => { ws.isAlive = true; });
+
     let decoded;
     try {
       decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
@@ -134,6 +137,20 @@ function initWsServer(httpServer) {
     ws.on('error', (err) => {
       console.error(`[WS] Error for user ${userId} in trip ${tripId}:`, err.message);
     });
+  });
+
+  const HEARTBEAT_INTERVAL = 30000;
+  const interval = setInterval(() => {
+    wss.clients.forEach((ws) => {
+      if (ws.isAlive === false) return ws.terminate();
+      
+      ws.isAlive = false;
+      ws.ping();
+    });
+  }, HEARTBEAT_INTERVAL);
+
+  wss.on('close', () => {
+    clearInterval(interval);
   });
 
   console.log('[chat-service] Native WebSocket server initialized at /ws/chat');

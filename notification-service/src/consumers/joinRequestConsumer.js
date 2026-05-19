@@ -15,6 +15,8 @@ async function connectRabbitMQ() {
 
     await channel.bindQueue(queue, exchange, 'join.approved');
     await channel.bindQueue(queue, exchange, 'join.rejected');
+    
+    channel.prefetch(10);
 
     console.log(`[RabbitMQ] Waiting for messages in queue: ${queue}`);
 

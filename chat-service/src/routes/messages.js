@@ -30,6 +30,7 @@ router.get('/', authMiddleware, async (req, res, next) => {
       order: [['createdAt', 'ASC']],
       limit: maxLimit,
       offset: parsedOffset,
+      attributes: ['id', 'tripId', 'senderId', 'senderEmail', 'content', 'type', 'createdAt']
     });
 
     res.json({ data: messages, tripId, limit: maxLimit, offset: parsedOffset });

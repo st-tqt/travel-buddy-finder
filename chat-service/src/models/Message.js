@@ -40,7 +40,9 @@ const Message = sequelize.define('Message', {
   tableName:  'messages',
   timestamps: true,
   indexes: [
-    { fields: ['tripId'] },   // Index để query lịch sử theo trip nhanh hơn
+    { fields: ['tripId'] },
+    { fields: ['tripId', 'createdAt'] },
+    { fields: ['senderId'] }
   ],
 });
 
