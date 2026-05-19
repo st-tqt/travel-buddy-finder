@@ -1,69 +1,40 @@
-'use strict';
-
 require('dotenv').config();
-<<<<<<< Updated upstream
-=======
 const express = require('express');
 const sequelize = require('./config/database');
 const notificationsRouter = require('./routes/notifications');
 const { connectRabbitMQ } = require('./consumers/joinRequestConsumer');
-const errorHandler = require('./middleware/errorHandler');
->>>>>>> Stashed changes
 
-const express            = require('express');
-const { sequelize }      = require('./config/database');
-const Notification       = require('./models/Notification');
-const notificationRoutes = require('./routes/notifications');
-const { startConsumer }  = require('./consumers/joinRequestConsumer');
-
-<<<<<<< Updated upstream
-const app  = express();
-=======
-app.use(errorHandler);
-
->>>>>>> Stashed changes
-const PORT = process.env.NOTIFICATION_SERVICE_PORT || 8084;
-
-// ── Middleware ──────────────────────────────────────────────
+const app = express();
 app.use(express.json());
 
-// ── Routes ──────────────────────────────────────────────────
-app.use('/notifications', notificationRoutes);
+app.use('/notifications', notificationsRouter);
 
-app.get('/health', (_req, res) =>
-  res.json({ status: 'ok', service: 'notification-service', port: PORT })
-);
-
-// ── Global error handler ────────────────────────────────────
-app.use((err, _req, res, _next) => {
-  console.error('[notification-service] Unhandled error:', err.message);
-  res.status(500).json({ error: 'Internal Server Error' });
+// Basic health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'UP' });
 });
 
-// ── Bootstrap ───────────────────────────────────────────────
-async function bootstrap() {
+const PORT = process.env.NOTIFICATION_SERVICE_PORT || 8084;
+
+async function startServer() {
   try {
-    // 1. Kết nối và sync DB (tạo bảng nếu chưa có)
     await sequelize.authenticate();
-    console.log('[DB] PostgreSQL connected.');
+    console.log('Database connected successfully.');
+    
+    // Sync models
+    await sequelize.sync();
+    console.log('Models synchronized.');
 
-    await sequelize.sync({ alter: true });
-    console.log('[DB] Tables synced.');
+    // Connect to RabbitMQ
+    connectRabbitMQ();
 
-    // 2. Start RabbitMQ consumer
-    await startConsumer();
-
-    // 3. Start HTTP server
     app.listen(PORT, () => {
-      console.log(`[notification-service] Running on http://localhost:${PORT}`);
+      console.log(`Notification Service running on port ${PORT}`);
     });
-
-  } catch (err) {
-    console.error('[notification-service] Bootstrap failed:', err.message);
+  } catch (error) {
+    console.error('Failed to start server:', error);
     process.exit(1);
   }
 }
 
-bootstrap();
-
-module.exports = app;
+startServer();

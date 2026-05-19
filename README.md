@@ -28,17 +28,24 @@ travel-buddy-finder/
 ## Khởi chạy nhanh
 
 ```bash
-# 1. Copy env file
+# 1. Clone code từ repository
+git clone https://github.com/st-tqt/travel-buddy-finder.git
+cd travel-buddy-finder
+
+# 2. Setup môi trường
+# Copy file mẫu sang file chính thức (không bao giờ commit file .env)
 cp .env.example .env
-# Điền các giá trị thật vào .env
+# Mở file .env và điền các giá trị cần thiết (như JWT_SECRET, DB_PASSWORD...)
 
-# 2. Chạy toàn bộ hệ thống
-docker-compose up --build
+# 3. Khởi chạy toàn bộ hệ thống với Docker Compose
+docker-compose up -d --build
 
-# 3. Truy cập
-# API Gateway:   http://localhost:8080
-# Frontend:      http://localhost:3000
-# RabbitMQ UI:   http://localhost:15672  (guest/guest)
+# 4. Kiểm tra và truy cập các dịch vụ:
+# - Frontend (React UI): http://localhost:80
+# - API Gateway:         http://localhost:3000
+# - PostgreSQL:          localhost:5432
+# - RabbitMQ UI:         http://localhost:15672 (tài khoản: guest / guest)
+# - Postman Collection:  Import file docs/postman_collection.json để test API end-to-end
 ```
 
 ## Phân công thành viên

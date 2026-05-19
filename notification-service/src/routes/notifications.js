@@ -1,41 +1,17 @@
-'use strict';
-
-<<<<<<< Updated upstream
-const express        = require('express');
-const router         = express.Router();
+const express = require('express');
+const router = express.Router();
+const Notification = require('../models/Notification');
 const authMiddleware = require('../middleware/authMiddleware');
-const Notification   = require('../models/Notification');
 
-// ── GET /notifications/:userId ───────────────────────────────
-// Trả về danh sách notifications của userId, mới nhất trước
-// Response: { data: [...], total: number }
+// GET /notifications/:userId
 router.get('/:userId', authMiddleware, async (req, res) => {
   try {
     const { userId } = req.params;
-
-    // Chỉ cho phép xem notification của chính mình
-    if (req.user.userId !== userId) {
-      return res.status(403).json({
-        error: 'Forbidden',
-        message: 'You can only view your own notifications',
-      });
-=======
-// GET /notifications/:userId
-router.get('/:userId', authMiddleware, async (req, res, next) => {
-  try {
-    const { userId } = req.params;
-    let { page, limit } = req.query;
-
-    // UUID validation
-    const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-    if (!uuidRegex.test(userId)) {
-      return res.status(400).json({ error: "Invalid userId format" });
-    }
     
     // Ensure the user is only fetching their own notifications
+    // Assuming authMiddleware attaches req.user with userId
     if (req.user.userId.toString() !== userId) {
-      return res.status(403).json({ error: "Forbidden" });
->>>>>>> Stashed changes
+      return res.status(403).json({ error: "Forbidden: Cannot access other user's notifications" });
     }
 
     // Pagination validation
@@ -49,25 +25,21 @@ router.get('/:userId', authMiddleware, async (req, res, next) => {
     const offset = (page - 1) * limit;
 
     const notifications = await Notification.findAll({
-<<<<<<< Updated upstream
-      where:  { userId },
-      order:  [['createdAt', 'DESC']],
+      where: { userId },
+      order: [['createdAt', 'DESC']]
     });
 
-    return res.status(200).json({
-      data:  notifications,
-      total: notifications.length,
+    res.json({
+      data: notifications,
+      total: notifications.length
     });
-
-  } catch (err) {
-    console.error('[GET /notifications/:userId]', err.message);
-    return res.status(500).json({ error: 'Internal Server Error' });
+  } catch (error) {
+    console.error("Error fetching notifications:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// ── PUT /notifications/:id/read ──────────────────────────────
-// Cập nhật isRead = true
-// Response: { message: "Marked as read" }
+// PUT /notifications/:id/read
 router.put('/:id/read', authMiddleware, async (req, res) => {
 =======
       where: { userId },
@@ -112,51 +84,25 @@ router.get('/:userId/unread-count', authMiddleware, async (req, res, next) => {
 router.put('/:id/read', authMiddleware, async (req, res, next) => {
 >>>>>>> Stashed changes
   try {
-    const notification = await Notification.findByPk(req.params.id);
-
+    const { id } = req.params;
+    
+    const notification = await Notification.findByPk(id);
     if (!notification) {
-      return res.status(404).json({ error: 'Notification not found' });
+      return res.status(404).json({ error: "Notification not found" });
     }
 
-<<<<<<< Updated upstream
-    // Chỉ cho phép cập nhật notification của chính mình
-    if (notification.userId !== req.user.userId) {
-      return res.status(403).json({
-        error: 'Forbidden',
-        message: 'You can only update your own notifications',
-      });
-=======
+    // Optional: check if the notification belongs to the authenticated user
     if (notification.userId !== req.user.userId.toString()) {
-      return res.status(403).json({ error: "Forbidden" });
->>>>>>> Stashed changes
+      return res.status(403).json({ error: "Forbidden: Not your notification" });
     }
 
-    await notification.update({ isRead: true });
+    notification.isRead = true;
+    await notification.save();
 
-<<<<<<< Updated upstream
-    return res.status(200).json({ message: 'Marked as read' });
-
-  } catch (err) {
-    console.error('[PUT /notifications/:id/read]', err.message);
-    return res.status(500).json({ error: 'Internal Server Error' });
-=======
     res.json({ message: "Marked as read" });
   } catch (error) {
-    next(error);
-  }
-});
-
-// PUT /notifications/read-all
-router.put('/read-all', authMiddleware, async (req, res, next) => {
-  try {
-    await Notification.update(
-      { isRead: true },
-      { where: { userId: req.user.userId.toString(), isRead: false } }
-    );
-    res.json({ message: "All notifications marked as read" });
-  } catch (error) {
-    next(error);
->>>>>>> Stashed changes
+    console.error("Error updating notification:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 

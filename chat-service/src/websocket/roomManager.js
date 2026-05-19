@@ -84,7 +84,7 @@ function getClientCount(tripId) {
  * Liệt kê tất cả rooms (debug)
  * @returns {{ tripId: string, count: number }[]}
  */
-function getRoomsList() {
+function getRooms() {
   const result = [];
   for (const [tripId, room] of rooms.entries()) {
     result.push({ tripId, count: room.size });
@@ -92,12 +92,4 @@ function getRoomsList() {
   return result;
 }
 
-function getClients(tripId) {
-  return rooms.get(tripId) || new Set();
-}
-
-function clearRooms() {
-  rooms.clear();
-}
-
-module.exports = { addClient, removeClient, broadcast, getClientCount, getRooms: getRoomsList, getRoomsList, getClients, clearRooms };
+module.exports = { addClient, removeClient, broadcast, getClientCount, getRooms };

@@ -1,49 +1,16 @@
-# Frontend (TV4)
+# React + Vite
 
-**Stack:** React.js (Vite) + Axios  
-**Phụ trách:** TV4
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## Sprint 1 – Mock API
+Currently, two official plugins are available:
 
-Sprint 1 dùng `msw` hoặc `json-server` để mock API theo `docs/api-contract.yaml`.  
-**Không chờ backend** – code UI song song!
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-```bash
-# Cài msw
-npm install msw --save-dev
-npx msw init public/ --save
+## React Compiler
 
-# Hoặc json-server
-npm install json-server --save-dev
-npx json-server --watch mocks/db.json --port 3001
-```
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-## Khởi chạy local
+## Expanding the ESLint configuration
 
-```bash
-cd frontend
-npm install
-npm run dev      # http://localhost:3000
-```
-
-## Cấu trúc thư mục (dự kiến)
-
-```
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   │   ├── Login.jsx
-│   │   ├── Register.jsx
-│   │   ├── Home.jsx         # Feed trips công khai
-│   │   ├── TripDetail.jsx
-│   │   └── Profile.jsx
-│   ├── services/
-│   │   └── api.js           # Axios client, base URL = API Gateway
-│   └── App.jsx
-├── mocks/
-│   ├── db.json              # json-server mock data
-│   └── handlers.js          # msw handlers (dựa trên api-contract.yaml)
-├── public/
-└── package.json
-```
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.

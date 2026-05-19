@@ -1,0 +1,6 @@
+CREATE DATABASE user_db;
+CREATE DATABASE trip_db;
+CREATE DATABASE join_db;
+CREATE DATABASE notification_db;
+CREATE DATABASE chat_db;
+CREATE DATABASE review_db;

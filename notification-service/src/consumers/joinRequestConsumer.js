@@ -1,165 +1,61 @@
-'use strict';
-
-/**
- * joinRequestConsumer.js – TV3
- * ─────────────────────────────────────────────────────────────
- * Subscribe queue "notification.queue" từ RabbitMQ
- * Nhận events từ Join Request Service (TV2) sau khi approve/reject
- *
- * Exchange : join-request-events (type: direct)
- * Queue    : notification.queue
- * Routing  : join.approved | join.rejected
- *
- * Event payload (TV2 publish):
- * {
- *   event    : "join.approved" | "join.rejected",
- *   userId   : "uuid-string",    ← người nhận notification
- *   tripId   : "uuid-string",
- *   tripName : "Tên chuyến đi"
- * }
- */
-
-const amqplib     = require('amqplib');
+const amqp = require('amqplib');
 const Notification = require('../models/Notification');
 
-const RABBITMQ_URL  = process.env.RABBITMQ_URL      || 'amqp://localhost:5672';
-const EXCHANGE_NAME = process.env.RABBITMQ_EXCHANGE  || 'join-request-events';
-const QUEUE_NAME    = process.env.RABBITMQ_QUEUE     || 'notification.queue';
+async function connectRabbitMQ() {
+  try {
+    const rabbitMqUrl = process.env.RABBITMQ_URL || 'amqp://localhost:5672';
+    const connection = await amqp.connect(rabbitMqUrl);
+    const channel = await connection.createChannel();
 
-async function startConsumer() {
-  let retries = 0;
-  const MAX_RETRIES = 10;
-  const RETRY_DELAY = 5000;
+    const exchange = process.env.RABBITMQ_EXCHANGE || 'join-request-events';
+    const queue = process.env.RABBITMQ_QUEUE || 'notification.queue';
 
-  while (retries < MAX_RETRIES) {
-    try {
-      const connection = await amqplib.connect(RABBITMQ_URL);
-      const channel    = await connection.createChannel();
+    await channel.assertExchange(exchange, 'direct', { durable: true });
+    await channel.assertQueue(queue, { durable: true });
 
-      // Khai báo exchange dạng direct (TV2 publish vào đây)
-      await channel.assertExchange(EXCHANGE_NAME, 'direct', { durable: true });
+    await channel.bindQueue(queue, exchange, 'join.approved');
+    await channel.bindQueue(queue, exchange, 'join.rejected');
 
-      // Khai báo queue và bind với cả 2 routing key
-      await channel.assertQueue(QUEUE_NAME, { durable: true });
-      await channel.bindQueue(QUEUE_NAME, EXCHANGE_NAME, 'join.approved');
-      await channel.bindQueue(QUEUE_NAME, EXCHANGE_NAME, 'join.rejected');
+    console.log(`[RabbitMQ] Waiting for messages in queue: ${queue}`);
 
-<<<<<<< Updated upstream
-      // Đảm bảo xử lý từng message một (không overwhelm service)
-      channel.prefetch(1);
-
-      console.log(`[RabbitMQ] Connected. Listening on queue: "${QUEUE_NAME}"`);
-
-      channel.consume(QUEUE_NAME, async (msg) => {
-        if (!msg) return;
-
-        let event;
-        try {
-          event = JSON.parse(msg.content.toString());
-          console.log('[RabbitMQ] Received:', event);
-=======
     channel.consume(queue, async (msg) => {
-      if (!msg) return;
+      if (msg !== null) {
+        const routingKey = msg.fields.routingKey;
+        const content = msg.content.toString();
+        
+        try {
+          const payload = JSON.parse(content);
+          console.log('[RabbitMQ] Received event:', routingKey, payload);
 
-      const routingKey = msg.fields.routingKey;
-      const content = msg.content.toString();
-      let payload;
-      
-      try {
-        payload = JSON.parse(content);
-      } catch (err) {
-        console.error('[RabbitMQ] Error parsing JSON:', err);
-        channel.ack(msg);
-        return;
-      }
-      
-      try {
-        console.log('[RabbitMQ] Received event:', routingKey, payload);
->>>>>>> Stashed changes
+          if (routingKey === 'join.approved') {
+            await Notification.create({
+              userId: payload.userId.toString(),
+              tripId: payload.tripId.toString(),
+              message: `Yêu cầu tham gia trip "${payload.tripName}" đã được duyệt`,
+              type: 'JOIN_APPROVED'
+            });
+          } else if (routingKey === 'join.rejected') {
+            await Notification.create({
+              userId: payload.userId.toString(),
+              tripId: payload.tripId.toString(),
+              message: `Yêu cầu tham gia trip "${payload.tripName}" đã bị từ chối`,
+              type: 'JOIN_REJECTED'
+            });
+          }
 
-          await handleEvent(event);
-          channel.ack(msg);
-
-<<<<<<< Updated upstream
-        } catch (err) {
-          console.error('[RabbitMQ] Error processing message:', err.message);
-          // nack – không requeue để tránh infinite loop
-          channel.nack(msg, false, false);
-        }
-      });
-
-      // Reconnect tự động khi connection đóng bất ngờ
-      connection.on('close', () => {
-        console.warn('[RabbitMQ] Connection closed. Reconnecting in 5s...');
-        setTimeout(startConsumer, RETRY_DELAY);
-      });
-
-      connection.on('error', (err) => {
-        console.error('[RabbitMQ] Connection error:', err.message);
-      });
-
-      return; // Kết nối thành công, thoát vòng loop
-
-    } catch (err) {
-      retries++;
-      console.warn(
-        `[RabbitMQ] Not ready (attempt ${retries}/${MAX_RETRIES}). ` +
-        `Retrying in ${RETRY_DELAY / 1000}s... Error: ${err.message}`
-      );
-      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-    }
-  }
-
-  console.error('[RabbitMQ] Max retries reached. Consumer failed to start.');
-}
-
-/**
- * Xử lý từng loại event và lưu Notification vào DB
- */
-async function handleEvent(event) {
-  const { event: type, userId, tripId, tripName } = event;
-
-  if (!userId || !tripId) {
-    console.error('[RabbitMQ] Invalid event payload – missing userId or tripId:', event);
-    return;
-  }
-
-  switch (type) {
-    case 'join.approved':
-      await Notification.create({
-        userId,
-        tripId,
-        message: `Yêu cầu tham gia trip "${tripName}" đã được duyệt`,
-        type:    'JOIN_APPROVED',
-      });
-      console.log(`[RabbitMQ] ✅ Saved JOIN_APPROVED notification for user ${userId}`);
-      break;
-
-    case 'join.rejected':
-      await Notification.create({
-        userId,
-        tripId,
-        message: `Yêu cầu tham gia trip "${tripName}" đã bị từ chối`,
-        type:    'JOIN_REJECTED',
-      });
-      console.log(`[RabbitMQ] ❌ Saved JOIN_REJECTED notification for user ${userId}`);
-      break;
-
-    default:
-      console.warn('[RabbitMQ] Unknown event type:', type);
-=======
           channel.ack(msg);
         } catch (error) {
           console.error('[RabbitMQ] Error processing message:', error);
-          channel.nack(msg, false, true); // Requeue on DB error
+          // If we fail to parse or insert, we still ack or reject. Here we ack to discard bad messages.
+          channel.ack(msg);
         }
+      }
     });
   } catch (error) {
     console.error('[RabbitMQ] Connection error:', error);
     // Retry connection after 5 seconds
     setTimeout(connectRabbitMQ, 5000);
->>>>>>> Stashed changes
   }
 }
 
-module.exports = { startConsumer };
+module.exports = { connectRabbitMQ };

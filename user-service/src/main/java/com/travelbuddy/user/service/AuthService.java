@@ -1,10 +1,11 @@
 package com.travelbuddy.user.service;
 
-// TODO TV1: implement AuthService
-// - register(): hash password (BCrypt), lưu DB, trả UserDTO
-// - login(): verify password, tạo JWT với payload { userId, email }
+import com.travelbuddy.user.dto.AuthResponse;
+import com.travelbuddy.user.dto.LoginRequest;
+import com.travelbuddy.user.dto.RegisterRequest;
+import com.travelbuddy.user.dto.UserDTO;
 
 public interface AuthService {
-    // RegisterResponse register(RegisterRequest request);
-    // LoginResponse login(LoginRequest request);
+    UserDTO register(RegisterRequest request);
+    AuthResponse login(LoginRequest request);
 }

@@ -1,0 +1,433 @@
+openapi: 3.0.3
+info:
+  title: Travel Buddy Finder – TV1 Services
+  version: 1.0.0
+  description: |
+    OpenAPI 3.0 specification cho User Service (:8081) và Review Service (:8086).
+    File này do TV1 viết, TV3 merge vào api-contract.yaml chung.
+
+servers:
+  - url: http://localhost:8081
+    description: User Service (Local)
+  - url: http://localhost:8086
+    description: Review Service (Local)
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        HS256 JWT. Secret = JWT_SECRET (dùng chung toàn nhóm).
+        Payload: { "userId": "<uuid>", "email": "<email>", "iat": <epoch>, "exp": <epoch> }
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          example: VALIDATION_FAILED
+        message:
+          type: string
+          example: Email already exists
+
+    UserDTO:
+      type: object
+      required: [id, name, email, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        name:
+          type: string
+          example: "Nguyen Van A"
+        email:
+          type: string
+          format: email
+          example: "nguyenvana@example.com"
+        bio:
+          type: string
+          nullable: true
+          example: "Thích đi phượt và khám phá ẩm thực"
+        tags:
+          type: array
+          items:
+            type: string
+          nullable: true
+          example: ["backpacker", "foodie"]
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-05-12T10:00:00Z"
+
+    ReviewDTO:
+      type: object
+      required: [id, tripId, reviewerId, targetUserId, rating, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+        tripId:
+          type: string
+          format: uuid
+          example: "c3d4e5f6-a7b8-9012-cdef-123456789012"
+        reviewerId:
+          type: string
+          format: uuid
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        targetUserId:
+          type: string
+          format: uuid
+          example: "d4e5f6a7-b8c9-0123-defa-234567890123"
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 5
+        comment:
+          type: string
+          nullable: true
+          example: "Bạn đồng hành tuyệt vời, rất vui tính!"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-05-12T15:30:00Z"
+
+paths:
+  # ==========================================
+  # USER SERVICE (:8081)
+  # ==========================================
+  /auth/register:
+    post:
+      tags: [User Service]
+      summary: Đăng ký tài khoản mới
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password]
+              properties:
+                name:
+                  type: string
+                  minLength: 2
+                  example: "Nguyen Van A"
+                email:
+                  type: string
+                  format: email
+                  example: "nguyenvana@example.com"
+                password:
+                  type: string
+                  minLength: 6
+                  example: "secret123"
+                bio:
+                  type: string
+                  nullable: true
+                  example: "Mình thích đi phượt"
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  nullable: true
+                  example: ["backpacker", "budget-travel"]
+            examples:
+              minimal:
+                summary: Đăng ký tối thiểu
+                value:
+                  name: "Nguyen Van A"
+                  email: "nguyenvana@example.com"
+                  password: "secret123"
+              full:
+                summary: Đăng ký đầy đủ
+                value:
+                  name: "Tran Thi B"
+                  email: "tranthib@example.com"
+                  password: "mypass456"
+                  bio: "Thích leo núi và chụp ảnh"
+                  tags: ["hiking", "photography"]
+      responses:
+        '201':
+          description: Đăng ký thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDTO'
+              example:
+                id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                name: "Nguyen Van A"
+                email: "nguyenvana@example.com"
+                bio: null
+                tags: []
+                createdAt: "2026-05-12T10:00:00Z"
+        '400':
+          description: Validation thất bại hoặc email đã tồn tại
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                emailDuplicate:
+                  summary: Email đã tồn tại
+                  value:
+                    error: "EMAIL_ALREADY_EXISTS"
+                    message: "Email nguyenvana@example.com đã được sử dụng"
+                validationFailed:
+                  summary: Validation thất bại
+                  value:
+                    error: "VALIDATION_FAILED"
+                    message: "Password phải có ít nhất 6 ký tự"
+
+  /auth/login:
+    post:
+      tags: [User Service]
+      summary: Đăng nhập và nhận JWT
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "nguyenvana@example.com"
+                password:
+                  type: string
+                  example: "secret123"
+            example:
+              email: "nguyenvana@example.com"
+              password: "secret123"
+      responses:
+        '200':
+          description: Đăng nhập thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [accessToken, user]
+                properties:
+                  accessToken:
+                    type: string
+                    description: JWT HS256, payload { userId, email, iat, exp }
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  user:
+                    type: object
+                    required: [id, name, email]
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                        example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                      name:
+                        type: string
+                        example: "Nguyen Van A"
+                      email:
+                        type: string
+                        format: email
+                        example: "nguyenvana@example.com"
+              example:
+                accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJhMWIyYzNkNC1lNWY2LTc4OTAtYWJjZC1lZjEyMzQ1Njc4OTAiLCJlbWFpbCI6Im5ndXllbnZhbmFAZXhhbXBsZS5jb20iLCJpYXQiOjE3MTUwMDAwMDAsImV4cCI6MTcxNTYwNDgwMH0.signature"
+                user:
+                  id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                  name: "Nguyen Van A"
+                  email: "nguyenvana@example.com"
+        '401':
+          description: Sai email hoặc password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "INVALID_CREDENTIALS"
+                message: "Email hoặc password không đúng"
+
+  /users/{id}:
+    get:
+      tags: [User Service]
+      summary: Lấy thông tin user theo ID
+      operationId: getUserById
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: UUID của user cần lấy thông tin
+          schema:
+            type: string
+            format: uuid
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+      responses:
+        '200':
+          description: Thông tin user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDTO'
+              example:
+                id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                name: "Nguyen Van A"
+                email: "nguyenvana@example.com"
+                bio: "Thích đi phượt và khám phá ẩm thực"
+                tags: ["backpacker", "foodie"]
+                createdAt: "2026-05-12T10:00:00Z"
+        '401':
+          description: Thiếu hoặc sai token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "UNAUTHORIZED"
+                message: "Token không hợp lệ hoặc đã hết hạn"
+        '404':
+          description: User không tồn tại
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "USER_NOT_FOUND"
+                message: "Không tìm thấy user với id a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+
+  # ==========================================
+  # REVIEW SERVICE (:8086)
+  # ==========================================
+  /reviews:
+    post:
+      tags: [Review Service]
+      summary: Tạo review cho user sau chuyến đi
+      operationId: createReview
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tripId, targetUserId, rating]
+              properties:
+                tripId:
+                  type: string
+                  format: uuid
+                  example: "c3d4e5f6-a7b8-9012-cdef-123456789012"
+                targetUserId:
+                  type: string
+                  format: uuid
+                  description: UUID của user được review
+                  example: "d4e5f6a7-b8c9-0123-defa-234567890123"
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  example: 5
+                comment:
+                  type: string
+                  nullable: true
+                  example: "Bạn đồng hành tuyệt vời!"
+            examples:
+              withComment:
+                summary: Review kèm nhận xét
+                value:
+                  tripId: "c3d4e5f6-a7b8-9012-cdef-123456789012"
+                  targetUserId: "d4e5f6a7-b8c9-0123-defa-234567890123"
+                  rating: 5
+                  comment: "Rất vui tính, đúng giờ và tôn trọng mọi người"
+              minimal:
+                summary: Review tối thiểu
+                value:
+                  tripId: "c3d4e5f6-a7b8-9012-cdef-123456789012"
+                  targetUserId: "d4e5f6a7-b8c9-0123-defa-234567890123"
+                  rating: 4
+      responses:
+        '201':
+          description: Review được tạo thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewDTO'
+              example:
+                id: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+                tripId: "c3d4e5f6-a7b8-9012-cdef-123456789012"
+                reviewerId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                targetUserId: "d4e5f6a7-b8c9-0123-defa-234567890123"
+                rating: 5
+                comment: "Rất vui tính, đúng giờ và tôn trọng mọi người"
+                createdAt: "2026-05-12T15:30:00Z"
+        '400':
+          description: Dữ liệu không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "VALIDATION_FAILED"
+                message: "Rating phải từ 1 đến 5"
+        '401':
+          description: Thiếu hoặc sai token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "UNAUTHORIZED"
+                message: "Token không hợp lệ hoặc đã hết hạn"
+
+  /reviews/user/{id}:
+    get:
+      tags: [Review Service]
+      summary: Lấy danh sách review của một user
+      operationId: getReviewsByUser
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: UUID của user cần lấy review
+          schema:
+            type: string
+            format: uuid
+          example: "d4e5f6a7-b8c9-0123-defa-234567890123"
+      responses:
+        '200':
+          description: Danh sách review
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, total]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ReviewDTO'
+                  total:
+                    type: integer
+                    example: 2
+              example:
+                data:
+                  - id: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+                    tripId: "c3d4e5f6-a7b8-9012-cdef-123456789012"
+                    reviewerId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                    targetUserId: "d4e5f6a7-b8c9-0123-defa-234567890123"
+                    rating: 5
+                    comment: "Tuyệt vời!"
+                    createdAt: "2026-05-12T15:30:00Z"
+                  - id: "e5f6a7b8-c9d0-1234-efab-345678901234"
+                    tripId: "f6a7b8c9-d0e1-2345-fabc-456789012345"
+                    reviewerId: "d4e5f6a7-b8c9-0123-defa-234567890123"
+                    targetUserId: "d4e5f6a7-b8c9-0123-defa-234567890123"
+                    rating: 4
+                    comment: "Rất ổn"
+                    createdAt: "2026-05-10T09:00:00Z"
+                total: 2
