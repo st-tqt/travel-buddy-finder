@@ -44,6 +44,7 @@ async function startConsumer() {
       await channel.bindQueue(QUEUE_NAME, EXCHANGE_NAME, 'join.approved');
       await channel.bindQueue(QUEUE_NAME, EXCHANGE_NAME, 'join.rejected');
 
+<<<<<<< Updated upstream
       // Đảm bảo xử lý từng message một (không overwhelm service)
       channel.prefetch(1);
 
@@ -56,10 +57,30 @@ async function startConsumer() {
         try {
           event = JSON.parse(msg.content.toString());
           console.log('[RabbitMQ] Received:', event);
+=======
+    channel.consume(queue, async (msg) => {
+      if (!msg) return;
+
+      const routingKey = msg.fields.routingKey;
+      const content = msg.content.toString();
+      let payload;
+      
+      try {
+        payload = JSON.parse(content);
+      } catch (err) {
+        console.error('[RabbitMQ] Error parsing JSON:', err);
+        channel.ack(msg);
+        return;
+      }
+      
+      try {
+        console.log('[RabbitMQ] Received event:', routingKey, payload);
+>>>>>>> Stashed changes
 
           await handleEvent(event);
           channel.ack(msg);
 
+<<<<<<< Updated upstream
         } catch (err) {
           console.error('[RabbitMQ] Error processing message:', err.message);
           // nack – không requeue để tránh infinite loop
@@ -126,6 +147,18 @@ async function handleEvent(event) {
 
     default:
       console.warn('[RabbitMQ] Unknown event type:', type);
+=======
+          channel.ack(msg);
+        } catch (error) {
+          console.error('[RabbitMQ] Error processing message:', error);
+          channel.nack(msg, false, true); // Requeue on DB error
+        }
+    });
+  } catch (error) {
+    console.error('[RabbitMQ] Connection error:', error);
+    // Retry connection after 5 seconds
+    setTimeout(connectRabbitMQ, 5000);
+>>>>>>> Stashed changes
   }
 }
 

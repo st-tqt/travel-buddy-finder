@@ -38,6 +38,16 @@ const JoinRequest = sequelize.define('JoinRequest', {
 }, {
   tableName:  'join_requests',
   timestamps: true,
+  indexes: [
+    { fields: ['tripId'] },
+    { fields: ['userId'] },
+    { fields: ['status'] },
+    {
+      unique: true,
+      fields: ['tripId', 'userId'],
+      where: { status: ['PENDING', 'APPROVED'] }
+    }
+  ],
 });
 
 module.exports = { sequelize, JoinRequest };

@@ -6,6 +6,7 @@ const cors    = require('cors');
 const morgan  = require('morgan');
 
 const tripRoutes = require('./routes/trips');
+const errorHandler = require('./middleware/errorHandler');
 
 const app  = express();
 const PORT = process.env.TRIP_SERVICE_PORT || 8082;
@@ -22,10 +23,7 @@ app.use('/trips', tripRoutes);
 app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'trip-service' }));
 
 // ── Error handler ───────────────────────────────────────────
-app.use((err, _req, res, _next) => {
-  console.error(err.stack);
-  res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
-});
+app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`[trip-service] Running on port ${PORT}`);

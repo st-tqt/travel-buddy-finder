@@ -55,9 +55,36 @@ const Trip = sequelize.define('Trip', {
     type:         DataTypes.BOOLEAN,
     defaultValue: true,
   },
+  currentMember: {
+    type:         DataTypes.INTEGER,
+    defaultValue: 1,
+  },
+  status: {
+    type:         DataTypes.ENUM('OPEN', 'CLOSED', 'COMPLETED'),
+    defaultValue: 'OPEN',
+  },
+  coverImage: {
+    type:         DataTypes.STRING,
+  },
 }, {
   tableName:  'trips',
   timestamps: true,
+  indexes: [
+    { fields: ['ownerId'] },
+    { fields: ['status'] },
+    { fields: ['location'] },
+    { fields: ['startDate'] },
+    { fields: ['createdAt'] }
+  ],
 });
 
-module.exports = { sequelize, Trip };
+const JoinRequest = sequelize.define('JoinRequest', {
+  id: { type: DataTypes.UUID, primaryKey: true },
+  tripId: { type: DataTypes.UUID },
+  status: { type: DataTypes.STRING }
+}, { tableName: 'join_requests', timestamps: false });
+
+Trip.hasMany(JoinRequest, { as: 'joinRequests', foreignKey: 'tripId' });
+JoinRequest.belongsTo(Trip, { foreignKey: 'tripId' });
+
+module.exports = { sequelize, Trip, JoinRequest };

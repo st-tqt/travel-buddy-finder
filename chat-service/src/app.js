@@ -5,10 +5,9 @@ const http      = require('http');
 const express   = require('express');
 const cors      = require('cors');
 const morgan    = require('morgan');
-const { Server } = require('socket.io');
-
 const messageRoutes  = require('./routes/messages');
-const { initSocket } = require('./sockets/chatSocket');
+const { initWsServer } = require('./websocket/wsServer');
+const errorHandler   = require('./middleware/errorHandler');
 
 const app    = express();
 const server = http.createServer(app);     // Socket.IO cần raw http.Server
@@ -23,18 +22,10 @@ app.use(express.json());
 app.use('/messages', messageRoutes);
 app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'chat-service' }));
 
-app.use((err, _req, res, _next) => {
-  console.error(err.stack);
-  res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
-});
+app.use(errorHandler);
 
-// ── Socket.IO (WebSocket) ───────────────────────────────────
-const io = new Server(server, {
-  path: '/ws/chat',        // ws://host:8085/ws/chat?tripId=...
-  cors: { origin: '*' },
-});
-
-initSocket(io);
+// ── WebSocket (Native WS) ───────────────────────────────────
+initWsServer(server);
 
 // ── Start ───────────────────────────────────────────────────
 server.listen(PORT, () => {

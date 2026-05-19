@@ -1,6 +1,14 @@
 'use strict';
 
 require('dotenv').config();
+<<<<<<< Updated upstream
+=======
+const express = require('express');
+const sequelize = require('./config/database');
+const notificationsRouter = require('./routes/notifications');
+const { connectRabbitMQ } = require('./consumers/joinRequestConsumer');
+const errorHandler = require('./middleware/errorHandler');
+>>>>>>> Stashed changes
 
 const express            = require('express');
 const { sequelize }      = require('./config/database');
@@ -8,7 +16,12 @@ const Notification       = require('./models/Notification');
 const notificationRoutes = require('./routes/notifications');
 const { startConsumer }  = require('./consumers/joinRequestConsumer');
 
+<<<<<<< Updated upstream
 const app  = express();
+=======
+app.use(errorHandler);
+
+>>>>>>> Stashed changes
 const PORT = process.env.NOTIFICATION_SERVICE_PORT || 8084;
 
 // ── Middleware ──────────────────────────────────────────────
