@@ -1,6 +1,7 @@
 package com.travelbuddy.review.controller;
 
 import com.travelbuddy.review.dto.CreateReviewRequest;
+import com.travelbuddy.review.dto.ReviewDTO;
 import com.travelbuddy.review.dto.UserReviewsResponse;
 import com.travelbuddy.review.service.ReviewService;
 import jakarta.servlet.http.HttpServletRequest;

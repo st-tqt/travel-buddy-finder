@@ -5,6 +5,7 @@ const express = require('express');
 const cors    = require('cors');
 const morgan  = require('morgan');
 
+const { sequelize } = require('./models/JoinRequest');
 const joinRoutes = require('./routes/joinRequests');
 const errorHandler = require('./middleware/errorHandler');
 
@@ -20,8 +21,21 @@ app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'join-reques
 
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`[join-request-service] Running on port ${PORT}`);
-});
+async function startServer() {
+  try {
+    await sequelize.authenticate();
+    await sequelize.sync();
+    console.log('[join-request-service] Database connected and synced successfully.');
+    app.listen(PORT, () => {
+      console.log(`[join-request-service] Running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error('[join-request-service] Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+startServer();
 
 module.exports = app;
+

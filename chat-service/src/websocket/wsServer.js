@@ -95,7 +95,7 @@ function initWsServer(httpServer) {
         message = await Message.create({
           tripId,
           senderId:   userId,
-          senderName,
+          senderEmail: senderName,
           content,
           type: 'text',
         });

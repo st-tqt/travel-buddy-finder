@@ -183,7 +183,7 @@ router.get('/:id', async (req, res, next) => {
   }
 });
 
-// ── PUT /trips/:id – Cập nhật trip (cần JWT, chỉ owner) ─────
+// ── PUT /trips/:id – Cập nhật trip (cần JWT, chỉ owner hoặc internal) ─────
 router.put('/:id', authMiddleware, async (req, res, next) => {
   try {
     const trip = await Trip.findByPk(req.params.id);
@@ -192,7 +192,9 @@ router.put('/:id', authMiddleware, async (req, res, next) => {
       err.status = 404;
       throw err;
     }
-    if (trip.ownerId !== req.user.userId) {
+
+    const isInternal = req.headers['x-internal-token'] === (process.env.JWT_SECRET || 'default_secret');
+    if (!isInternal && trip.ownerId !== req.user.userId) {
       const err = new Error('Forbidden: Not the owner');
       err.status = 403;
       throw err;
@@ -203,6 +205,8 @@ router.put('/:id', authMiddleware, async (req, res, next) => {
     if (updates.currentMember !== undefined) {
       if (updates.currentMember >= trip.maxMembers) {
         updates.status = 'CLOSED';
+      } else if (trip.status === 'CLOSED') {
+        updates.status = 'OPEN';
       }
     }
 
@@ -226,6 +230,19 @@ router.delete('/:id', authMiddleware, async (req, res, next) => {
       const err = new Error('Forbidden: Not the owner');
       err.status = 403;
       throw err;
+    }
+
+    // Cascade delete associated requests in join-request-service via internal call
+    try {
+      const JOIN_SERVICE_URL = process.env.JOIN_SERVICE_URL || 'http://join-request-service:8083';
+      await fetch(`${JOIN_SERVICE_URL}/join-requests/trips/${trip.id}`, {
+        method: 'DELETE',
+        headers: {
+          'x-internal-token': process.env.JWT_SECRET || 'default_secret'
+        }
+      });
+    } catch (e) {
+      console.error('[Internal Cascade Delete Requests Error]', e.message);
     }
 
     await trip.destroy();

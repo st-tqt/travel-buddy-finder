@@ -15,9 +15,11 @@ router.get('/:userId', authMiddleware, async (req, res) => {
     }
 
     // Pagination validation
+    let page = req.query.page;
     page = parseInt(page, 10);
     if (isNaN(page) || page <= 0) page = 1;
     
+    let limit = req.query.limit;
     limit = parseInt(limit, 10);
     if (isNaN(limit) || limit <= 0) limit = 20;
     if (limit > 100) limit = 100;

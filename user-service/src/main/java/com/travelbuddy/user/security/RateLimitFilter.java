@@ -21,8 +21,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Component
 public class RateLimitFilter extends OncePerRequestFilter {
 
-    private static final int  LOGIN_MAX    = 5;
-    private static final int  REGISTER_MAX = 3;
+    private static final int  LOGIN_MAX    = 100;
+    private static final int  REGISTER_MAX = 50;
     private static final long WINDOW_MS    = 60_000L; // 1 phút
 
     private record Bucket(AtomicInteger count, long windowStart) {}

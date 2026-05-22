@@ -36,6 +36,10 @@ const Message = sequelize.define('Message', {
     type:     DataTypes.TEXT,
     allowNull: false,
   },
+  type: {
+    type:         DataTypes.STRING,
+    defaultValue: 'text',
+  },
 }, {
   tableName:  'messages',
   timestamps: true,
