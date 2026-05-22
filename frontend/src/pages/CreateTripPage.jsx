@@ -37,14 +37,40 @@ export default function CreateTripPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.title.trim()) return toast.error('Tiêu đề không được để trống');
-    if (new Date(formData.endDate) <= new Date(formData.startDate)) {
+    if (!formData.location.trim()) return toast.error('Địa điểm không được để trống');
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const start = new Date(formData.startDate);
+    const end = new Date(formData.endDate);
+
+    if (isNaN(start.getTime())) {
+      return toast.error('Ngày bắt đầu không hợp lệ');
+    }
+    if (isNaN(end.getTime())) {
+      return toast.error('Ngày kết thúc không hợp lệ');
+    }
+    if (start < today) {
+      return toast.error('Ngày bắt đầu không được ở quá khứ');
+    }
+    if (end <= start) {
       return toast.error('Ngày kết thúc phải sau ngày bắt đầu');
     }
     if (formData.maxMember < 2) return toast.error('Số lượng thành viên tối thiểu là 2');
 
     try {
       setLoading(true);
-      const res = await tripApi.createTrip({ ...formData, tags });
+      const payload = {
+        title: formData.title,
+        description: formData.description,
+        location: formData.location,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        maxMembers: Number(formData.maxMember),
+        coverImage: formData.coverImage,
+        tags
+      };
+      const res = await tripApi.createTrip(payload);
       toast.success('Tạo chuyến đi thành công!');
       navigate(`/trips/${res.data.id || res.data._id}`);
     } catch (error) {
@@ -55,7 +81,7 @@ export default function CreateTripPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-4">
+    <div className="max-w-2xl mx-auto p-4 page-enter">
       <h1 className="text-3xl font-bold text-gray-900 mb-6">Tạo chuyến đi mới</h1>
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl shadow border space-y-4">
         <div>

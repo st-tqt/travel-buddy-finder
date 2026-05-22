@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { joinRequestApi } from '../../api/joinRequestApi';
 
-export default function JoinRequestList({ tripId, onMemberAdded }) {
+export default function JoinRequestList({ tripId, onMemberAdded, onMemberRemoved }) {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -13,7 +13,8 @@ export default function JoinRequestList({ tripId, onMemberAdded }) {
   const fetchRequests = async () => {
     try {
       const res = await joinRequestApi.getRequestsByTrip(tripId);
-      setRequests(res.data?.data || []);
+      const requestList = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+      setRequests(requestList);
     } catch (error) {
       toast.error('Lỗi tải danh sách yêu cầu');
     } finally {
@@ -22,23 +23,46 @@ export default function JoinRequestList({ tripId, onMemberAdded }) {
   };
 
   const handleApprove = async (id) => {
+    const originalRequests = [...requests];
+    // Optimistic UI update
+    setRequests(requests.map(r => r.id === id ? { ...r, status: 'APPROVED' } : r));
     try {
       await joinRequestApi.approveRequest(id);
       toast.success('Đã duyệt thành công');
-      setRequests(requests.map(r => r.id === id ? { ...r, status: 'approved' } : r));
       onMemberAdded();
     } catch (error) {
+      // Rollback
+      setRequests(originalRequests);
       toast.error(error.response?.data?.error || 'Lỗi khi duyệt');
     }
   };
 
   const handleReject = async (id) => {
+    const originalRequests = [...requests];
+    // Optimistic UI update
+    setRequests(requests.map(r => r.id === id ? { ...r, status: 'REJECTED' } : r));
     try {
       await joinRequestApi.rejectRequest(id);
       toast.success('Đã từ chối');
-      setRequests(requests.map(r => r.id === id ? { ...r, status: 'rejected' } : r));
     } catch (error) {
+      // Rollback
+      setRequests(originalRequests);
       toast.error(error.response?.data?.error || 'Lỗi khi từ chối');
+    }
+  };
+
+  const handleRemoveMember = async (id) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa thành viên này khỏi chuyến đi?')) return;
+    const originalRequests = [...requests];
+    setRequests(requests.filter(r => r.id !== id));
+    try {
+      await joinRequestApi.removeMember(id);
+      toast.success('Đã xóa thành viên thành công');
+      if (onMemberRemoved) onMemberRemoved();
+    } catch (error) {
+      // Rollback
+      setRequests(originalRequests);
+      toast.error(error.response?.data?.error || 'Lỗi khi xóa thành viên');
     }
   };
 
@@ -58,16 +82,26 @@ export default function JoinRequestList({ tripId, onMemberAdded }) {
               <p className="text-xs text-gray-500">{new Date(req.createdAt).toLocaleString()}</p>
             </div>
           </div>
-          <div className="flex gap-2">
-            {req.status === 'pending' ? (
+          <div className="flex gap-2 items-center">
+            {req.status?.toLowerCase() === 'pending' ? (
               <>
                 <button onClick={() => handleApprove(req.id)} className="px-3 py-1.5 bg-green-500 text-white text-sm font-medium rounded hover:bg-green-600 transition">Duyệt</button>
                 <button onClick={() => handleReject(req.id)} className="px-3 py-1.5 bg-red-500 text-white text-sm font-medium rounded hover:bg-red-600 transition">Từ chối</button>
               </>
             ) : (
-              <span className={`px-2.5 py-1 text-xs font-semibold rounded ${req.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                {req.status.toUpperCase()}
-              </span>
+              <div className="flex gap-2 items-center">
+                <span className={`px-2.5 py-1 text-xs font-semibold rounded ${req.status?.toLowerCase() === 'approved' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                  {req.status?.toUpperCase()}
+                </span>
+                {req.status?.toLowerCase() === 'approved' && (
+                  <button 
+                    onClick={() => handleRemoveMember(req.id)}
+                    className="px-2.5 py-1 text-xs font-semibold rounded bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700 transition"
+                  >
+                    Xóa khỏi trip
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </div>

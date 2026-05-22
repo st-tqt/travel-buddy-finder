@@ -4,21 +4,25 @@ import axiosInstance from '../api/axiosInstance';
 export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    const storedUser = localStorage.getItem('user');
+    try {
+      return storedUser ? JSON.parse(storedUser) : null;
+    } catch {
+      return null;
+    }
+  });
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [isLoading, setIsLoading] = useState(true);
 
-  // Hàm helper để check token exp (nếu JWT hợp lệ)
+  // Hàm helper để check token exp
   const isTokenExpired = (jwtToken) => {
     if (!jwtToken) return true;
     try {
       const payload = JSON.parse(atob(jwtToken.split('.')[1]));
-      if (payload.exp && payload.exp * 1000 < Date.now()) {
-        return true;
-      }
-      return false;
-    } catch (e) {
-      return false; // Trả về false nếu là token mock (không parse được exp)
+      return Date.now() >= payload.exp * 1000;
+    } catch {
+      return true;
     }
   };
 
@@ -27,13 +31,27 @@ export const AuthProvider = ({ children }) => {
       if (token) {
         if (isTokenExpired(token)) {
           localStorage.removeItem('token');
+          localStorage.removeItem('user');
           setToken(null);
           setUser(null);
         } else {
-          // Trong thực tế sẽ gọi API lấy thông tin user dựa trên token.
-          // Tạm thời set user mẫu để duy trì trạng thái đăng nhập.
-          setUser({ name: "Authenticated User", email: "user@example.com" });
+          // Nếu không có user trong localStorage nhưng token còn hạn, parse tạm từ JWT
+          if (!user) {
+            try {
+              const payload = JSON.parse(atob(token.split('.')[1]));
+              setUser({
+                id: payload.userId || payload.id || payload.sub,
+                email: payload.email || "user@example.com",
+                name: payload.name || "Authenticated User"
+              });
+            } catch {
+              setUser({ id: "authenticated-user", name: "Authenticated User", email: "user@example.com" });
+            }
+          }
         }
+      } else {
+        localStorage.removeItem('user');
+        setUser(null);
       }
       setIsLoading(false);
     };
@@ -42,22 +60,24 @@ export const AuthProvider = ({ children }) => {
   }, [token]);
 
   const login = async (email, password) => {
-    const response = await axiosInstance.post('/api/auth/login', { email, password });
+    const response = await axiosInstance.post('/auth/login', { email, password });
     const { accessToken, user: userData } = response.data;
     
     localStorage.setItem('token', accessToken);
+    localStorage.setItem('user', JSON.stringify(userData));
     setToken(accessToken);
     setUser(userData);
   };
 
   const register = async (name, email, password) => {
-    await axiosInstance.post('/api/auth/register', { name, email, password });
+    await axiosInstance.post('/auth/register', { name, email, password });
     // Tự động đăng nhập sau khi đăng ký thành công
     await login(email, password);
   };
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setToken(null);
     setUser(null);
     window.location.href = '/login';

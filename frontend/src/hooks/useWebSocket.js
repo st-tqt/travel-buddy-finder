@@ -10,7 +10,11 @@ export function useWebSocket(tripId) {
   const reconnectCount = useRef(0);
   const MAX_RECONNECT = 3;
 
+  const reconnectTimerRef = useRef(null);
+  const isMountedRef = useRef(true);
+
   const connect = () => {
+    if (!isMountedRef.current) return;
     const token = localStorage.getItem('token');
     if (!token) {
       window.location.href = '/login';
@@ -22,6 +26,7 @@ export function useWebSocket(tripId) {
     wsRef.current = new WebSocket(wsUrl);
 
     wsRef.current.onopen = () => {
+      if (!isMountedRef.current) return;
       setIsConnected(true);
       setIsConnecting(false);
       reconnectCount.current = 0;
@@ -29,6 +34,7 @@ export function useWebSocket(tripId) {
     };
 
     wsRef.current.onmessage = (event) => {
+      if (!isMountedRef.current) return;
       try {
         const message = JSON.parse(event.data);
         setMessages((prev) => [...prev, message]);
@@ -38,6 +44,7 @@ export function useWebSocket(tripId) {
     };
 
     wsRef.current.onclose = (event) => {
+      if (!isMountedRef.current) return;
       setIsConnected(false);
       setIsConnecting(false);
       if (event.code === 4001) {
@@ -47,7 +54,11 @@ export function useWebSocket(tripId) {
       } else {
         if (reconnectCount.current < MAX_RECONNECT) {
           reconnectCount.current += 1;
-          setTimeout(connect, 3000);
+          reconnectTimerRef.current = setTimeout(() => {
+            if (isMountedRef.current) {
+              connect();
+            }
+          }, 3000);
         } else {
           setError('Không thể kết nối chat');
           toast.error('Mất kết nối chat, vui lòng tải lại trang');
@@ -56,13 +67,19 @@ export function useWebSocket(tripId) {
     };
 
     wsRef.current.onerror = () => {
+      if (!isMountedRef.current) return;
       setError('Lỗi kết nối WebSocket');
     };
   };
 
   useEffect(() => {
+    isMountedRef.current = true;
     connect();
     return () => {
+      isMountedRef.current = false;
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current);
+      }
       if (wsRef.current) {
         wsRef.current.close();
       }
@@ -70,8 +87,9 @@ export function useWebSocket(tripId) {
   }, [tripId]);
 
   const sendMessage = (content) => {
+    if (!content || !content.trim()) return;
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ content }));
+      wsRef.current.send(JSON.stringify({ content: content.trim() }));
     } else {
       toast.error('Chưa kết nối được chat');
     }

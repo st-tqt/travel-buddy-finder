@@ -2,14 +2,16 @@ import React from 'react';
 
 export default function TripDetailCard({ trip }) {
   const getStatusColor = (status) => {
-    if (status === 'open') return 'bg-green-100 text-green-800';
-    if (status === 'closed') return 'bg-red-100 text-red-800';
+    const s = status?.toLowerCase();
+    if (s === 'open') return 'bg-green-100 text-green-800';
+    if (s === 'closed') return 'bg-red-100 text-red-800';
     return 'bg-gray-100 text-gray-800';
   };
 
   const getStatusText = (status) => {
-    if (status === 'open') return 'Đang mở';
-    if (status === 'closed') return 'Đã đầy';
+    const s = status?.toLowerCase();
+    if (s === 'open') return 'Đang mở';
+    if (s === 'closed') return 'Đã đầy';
     return 'Đã kết thúc';
   };
 
@@ -31,7 +33,7 @@ export default function TripDetailCard({ trip }) {
         <div className="grid grid-cols-2 gap-4 mb-6">
           <p className="text-gray-700">📍 <strong>Địa điểm:</strong> {trip.location}</p>
           <p className="text-gray-700">📅 <strong>Thời gian:</strong> {new Date(trip.startDate).toLocaleDateString()} - {new Date(trip.endDate).toLocaleDateString()}</p>
-          <p className="text-gray-700">👥 <strong>Thành viên:</strong> {trip.currentMember} / {trip.maxMember}</p>
+          <p className="text-gray-700">👥 <strong>Thành viên:</strong> {trip.currentMember} / {trip.maxMembers || trip.maxMember}</p>
         </div>
 
         <div className="flex flex-wrap gap-2 mb-6">

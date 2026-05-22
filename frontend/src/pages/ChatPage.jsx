@@ -26,8 +26,10 @@ export default function ChatPage() {
         chatApi.getMessages(tripId, { limit: 50 })
       ]);
       setTrip(tripRes.data);
-      // reverse messages because they usually come latest first from API, but we want chronological order in UI
-      const sortedMessages = [...(msgRes.data?.data || [])].reverse();
+      // Sort messages chronologically (ascending: earliest first, latest last)
+      const sortedMessages = [...(msgRes.data?.data || [])].sort(
+        (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+      );
       setMessages(sortedMessages);
     } catch (e) {
       toast.error('Lỗi khi tải thông tin chat');
@@ -41,7 +43,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-4 h-[calc(100vh-80px)]">
+    <div className="max-w-4xl mx-auto p-4 h-[calc(100vh-80px)] page-enter">
       <div className="bg-white border rounded-xl shadow-sm h-full flex flex-col overflow-hidden">
         <div className="p-4 border-b flex justify-between items-center bg-gray-50">
           <div className="flex items-center gap-3">

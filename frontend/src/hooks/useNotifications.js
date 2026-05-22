@@ -25,9 +25,13 @@ export function useNotifications() {
       if (page === 1) {
         setNotifications(res.data.data);
       } else {
-        setNotifications(prev => [...prev, ...res.data.data]);
+        setNotifications(prev => {
+          const existingIds = new Set(prev.map(n => n.id));
+          const newItems = (res.data.data || []).filter(n => !existingIds.has(n.id));
+          return [...prev, ...newItems];
+        });
       }
-      setPagination(res.data.pagination);
+      setPagination(res.data.pagination || { page, totalPages: 1 });
     } catch (e) {
       console.error(e);
     } finally {

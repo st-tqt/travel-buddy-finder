@@ -10,7 +10,7 @@ export default function NotificationPage() {
   }, []);
 
   return (
-    <div className="max-w-3xl mx-auto p-4">
+    <div className="max-w-3xl mx-auto p-4 page-enter">
       <div className="bg-white rounded-xl shadow overflow-hidden">
         <div className="p-4 border-b flex justify-between items-center bg-gray-50">
           <h1 className="text-xl font-bold text-gray-800">Thông báo</h1>

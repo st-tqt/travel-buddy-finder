@@ -1,33 +1,66 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useDebounce } from 'use-debounce';
 import { tripApi } from '../api/tripApi';
 import TripCard from '../components/trip/TripCard';
+import Skeleton from '../components/common/Skeleton';
+import EmptyState from '../components/common/EmptyState';
 
 const HomePage = () => {
+  const navigate = useNavigate();
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalTrips, setTotalTrips] = useState(0);
+  const limit = 6;
+
+  const [debouncedSearch] = useDebounce(search, 500);
 
   useEffect(() => {
-    const fetchTrips = async () => {
-      try {
-        const data = await tripApi.getAllTrips();
-        setTrips(data);
-      } catch (error) {
-        console.error('Failed to fetch trips', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchTrips();
-  }, []);
+    setPage(1);
+  }, [debouncedSearch]);
 
-  const filteredTrips = trips.filter(trip => 
-    trip.location?.toLowerCase().includes(search.toLowerCase()) || 
-    trip.title?.toLowerCase().includes(search.toLowerCase())
-  );
+  const fetchTrips = async () => {
+    try {
+      setLoading(true);
+      const res = await tripApi.getTrips({
+        location: debouncedSearch,
+        page,
+        limit
+      });
+      
+      // Hỗ trợ cả trường hợp mock api trả về dạng array và real api trả về paginated object
+      if (Array.isArray(res.data)) {
+        setTrips(res.data);
+        setTotalPages(1);
+        setTotalTrips(res.data.length);
+      } else if (res.data && Array.isArray(res.data.data)) {
+        setTrips(res.data.data);
+        setTotalPages(res.data.totalPages || 1);
+        setTotalTrips(res.data.total || 0);
+      } else {
+        setTrips([]);
+        setTotalPages(1);
+        setTotalTrips(0);
+      }
+    } catch (error) {
+      console.error('Failed to fetch trips', error);
+      setTrips([]);
+      setTotalPages(1);
+      setTotalTrips(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTrips();
+  }, [debouncedSearch, page]);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen page-enter">
       {/* Hero Section */}
       <div className="relative bg-blue-600 overflow-hidden rounded-3xl mx-4 mt-4 shadow-xl">
         <div className="absolute inset-0">
@@ -77,7 +110,10 @@ const HomePage = () => {
             <h2 className="text-3xl font-bold text-gray-900">Chuyến đi nổi bật</h2>
             <p className="mt-2 text-gray-600">Tham gia ngay các chuyến đi sắp khởi hành</p>
           </div>
-          <button className="hidden sm:flex items-center text-blue-600 font-medium hover:text-blue-800 transition-colors">
+          <button 
+            onClick={() => { setSearch(''); setPage(1); }}
+            className="hidden sm:flex items-center text-blue-600 font-medium hover:text-blue-800 transition-colors"
+          >
             Xem tất cả
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
@@ -86,25 +122,54 @@ const HomePage = () => {
         </div>
 
         {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 animate-pulse">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <Skeleton key={i} variant="card" />
+            ))}
           </div>
         ) : (
           <>
-            {filteredTrips.length === 0 ? (
-              <div className="text-center py-20 bg-gray-50 rounded-2xl border border-dashed border-gray-300">
-                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <h3 className="mt-2 text-sm font-medium text-gray-900">Không tìm thấy chuyến đi</h3>
-                <p className="mt-1 text-sm text-gray-500">Thử tìm kiếm với từ khóa khác.</p>
-              </div>
+            {trips.length === 0 ? (
+              <EmptyState 
+                icon="🧳"
+                title="Không tìm thấy chuyến đi"
+                message="Thử tìm kiếm với từ khóa khác hoặc tự tạo một chuyến đi mới!"
+                action={{
+                  label: "Tạo chuyến đi mới",
+                  onClick: () => navigate('/trips/create')
+                }}
+              />
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                {filteredTrips.map(trip => (
-                  <TripCard key={trip.id} trip={trip} />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {trips.map(trip => (
+                    <TripCard key={trip.id} trip={trip} />
+                  ))}
+                </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex justify-center items-center gap-4 mt-12 border-t pt-6">
+                    <button
+                      onClick={() => setPage(prev => Math.max(1, prev - 1))}
+                      disabled={page === 1}
+                      className="px-4 py-2 border rounded-lg font-medium text-gray-700 bg-white hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Trang trước
+                    </button>
+                    <span className="text-gray-600 text-sm font-semibold">
+                      Trang {page} / {totalPages}
+                    </span>
+                    <button
+                      onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={page === totalPages}
+                      className="px-4 py-2 border rounded-lg font-medium text-gray-700 bg-white hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Trang sau
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </>
         )}

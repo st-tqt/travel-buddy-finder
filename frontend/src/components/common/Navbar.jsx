@@ -18,6 +18,13 @@ const Navbar = () => {
           <div className="flex items-center space-x-6">
             {isAuthenticated ? (
               <div className="flex items-center gap-6">
+                <Link 
+                  to="/trips/create" 
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold px-5 py-2.5 rounded-full shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 text-sm flex items-center gap-1.5"
+                >
+                  <span className="text-base font-bold">+</span>
+                  <span>Tạo chuyến đi</span>
+                </Link>
                 <NotificationBadge />
                 <Link to={`/profile/${user?.id || 'me'}`} className="flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium transition-colors">
                   <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold shadow-md">

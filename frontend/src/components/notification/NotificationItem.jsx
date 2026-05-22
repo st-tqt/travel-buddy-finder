@@ -1,6 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export default function NotificationItem({ notification, onRead }) {
+  const navigate = useNavigate();
+
   const getIcon = () => {
     switch (notification.type) {
       case 'JOIN_APPROVED': return '✅';
@@ -9,9 +12,18 @@ export default function NotificationItem({ notification, onRead }) {
     }
   };
 
+  const handleClick = () => {
+    if (!notification.isRead) {
+      onRead(notification.id);
+    }
+    if (notification.tripId) {
+      navigate(`/trips/${notification.tripId}`);
+    }
+  };
+
   return (
     <div 
-      onClick={() => !notification.isRead && onRead(notification.id)}
+      onClick={handleClick}
       className={`p-4 border-b flex gap-4 cursor-pointer transition ${notification.isRead ? 'bg-white hover:bg-gray-50' : 'bg-blue-50 hover:bg-blue-100'}`}
     >
       <div className="text-2xl pt-1">{getIcon()}</div>

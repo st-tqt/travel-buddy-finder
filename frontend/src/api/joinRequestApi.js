@@ -7,4 +7,6 @@ export const joinRequestApi = {
   getRequestsByTrip: (tripId) => axiosInstance.get(`/join-requests`, { params: { tripId } }),
   getMyRequests: (params) => axiosInstance.get('/join-requests/my', { params }),
   cancelRequest: (id) => axiosInstance.delete(`/join-requests/${id}`),
+  removeMember: (id) => axiosInstance.post(`/join-requests/${id}/remove`),
+  leaveTrip: (tripId) => axiosInstance.post(`/join-requests/trips/${tripId}/leave`),
 };
