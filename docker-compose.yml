@@ -96,6 +96,7 @@ services:
       - RABBITMQ_PORT=5672
       - RABBITMQ_USER=${RABBITMQ_USER:-guest}
       - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD:-guest}
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672
       - TRUST_GATEWAY=true
     networks:
       - travel-buddy-network
@@ -153,22 +154,22 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-#   review-service:
-#     build: ./review-service
-#     ports:
-#       - "8086:8086"
-#     environment:
-#       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-db:5432/review_db
-#       - SPRING_DATASOURCE_USERNAME=${DB_USER:-postgres}
-#       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD:-password}
-#       - JWT_SECRET=${JWT_SECRET}
-#       - TRUST_GATEWAY=true
-#     networks:
-#       - travel-buddy-network
-#     depends_on:
-#       postgres-db:
-#         condition: service_healthy
-#     restart: unless-stopped
+  review-service:
+    build: ./review-service
+    ports:
+      - "8086:8086"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-db:5432/review_db
+      - SPRING_DATASOURCE_USERNAME=${DB_USER:-postgres}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD:-password}
+      - JWT_SECRET=${JWT_SECRET}
+      - TRUST_GATEWAY=true
+    networks:
+      - travel-buddy-network
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+    restart: unless-stopped
 
   # ============================================================
   # TẦNG 3: API GATEWAY
@@ -204,7 +205,7 @@ services:
     ports:
       - "80:80"
     environment:
-      - VITE_API_BASE_URL=http://localhost:3000
+      - VITE_API_URL=http://localhost:3000
     networks:
       - travel-buddy-network
     depends_on:

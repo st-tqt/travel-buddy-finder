@@ -6,7 +6,7 @@ const cors           = require('cors');
 const helmet         = require('helmet');
 const compression    = require('compression');
 const { v4: uuidv4 } = require('uuid');
-const { createProxyMiddleware } = require('http-proxy-middleware');
+const { createProxyMiddleware, fixRequestBody } = require('http-proxy-middleware');
 const jwt            = require('jsonwebtoken');
 const rateLimit      = require('express-rate-limit');
 const swaggerUi      = require('swagger-ui-express');
@@ -34,8 +34,7 @@ app.use(compression());
 // ── CORS ───────────────────────────────────────────────────
 app.use(cors());
 
-// ── Request size limit (prevent oversized body attacks) ────
-app.use(express.json({ limit: '10kb' }));
+// ── Request size limit (removed express.json parser for raw streaming) ────
 
 // ── Assign unique Request ID to every request ─────────────
 app.use((req, _res, next) => {
@@ -57,19 +56,19 @@ app.use((req, res, next) => {
 });
 
 // ── Rate limiters ─────────────────────────────────────────
-// General: 100 req / 15 min / IP
+// General: 2000 req / 15 min / IP (Highly accommodating for development, seeder scripts, and active testing)
 const generalLimiter = rateLimit({
     windowMs : 15 * 60 * 1000,
-    max      : 100,
+    max      : 2000,
     standardHeaders: true,
     legacyHeaders  : false,
     message  : { error: 'Too many requests, please try again later.' }
 });
 
-// Auth routes: 10 req / 15 min / IP (strict)
+// Auth routes: 500 req / 15 min / IP
 const authLimiter = rateLimit({
     windowMs : 15 * 60 * 1000,
-    max      : 10,
+    max      : 500,
     standardHeaders: true,
     legacyHeaders  : false,
     message  : { error: 'Too many authentication attempts, please try again later.' }
