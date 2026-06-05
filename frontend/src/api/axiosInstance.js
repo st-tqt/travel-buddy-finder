@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const axiosInstance = axios.create({
   baseURL: (() => {
-    const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    const base = import.meta.env.VITE_API_URL || '/api';
     return base.endsWith('/api') ? base : `${base}/api`;
   })(),
   timeout: 10000,

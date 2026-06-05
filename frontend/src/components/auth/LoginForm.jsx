@@ -17,14 +17,14 @@ const LoginForm = () => {
       navigate('/');
     } catch (error) {
       console.error('Login failed', error);
-      alert('Login failed. Please try again.');
+      alert('Đăng nhập thất bại. Vui lòng thử lại.');
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md">
       <div className="mb-4">
-        <label className="block text-gray-700 mb-2">Email</label>
+        <label className="block text-gray-700 mb-2">Địa chỉ email</label>
         <input 
           type="email" 
           value={email} 
@@ -34,7 +34,7 @@ const LoginForm = () => {
         />
       </div>
       <div className="mb-6">
-        <label className="block text-gray-700 mb-2">Password</label>
+        <label className="block text-gray-700 mb-2">Mật khẩu</label>
         <input 
           type="password" 
           value={password} 
@@ -44,7 +44,7 @@ const LoginForm = () => {
         />
       </div>
       <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700">
-        Login
+        Đăng nhập
       </button>
     </form>
   );
