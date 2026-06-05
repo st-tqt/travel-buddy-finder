@@ -64,7 +64,7 @@ export function useNotifications() {
   useEffect(() => {
     if (user) {
       fetchUnreadCount();
-      const interval = setInterval(fetchUnreadCount, 30000);
+      const interval = setInterval(fetchUnreadCount, 5000);
       return () => clearInterval(interval);
     }
   }, [user]);

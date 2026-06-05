@@ -91,7 +91,7 @@ export default function JoinRequestList({ tripId, onMemberAdded, onMemberRemoved
             ) : (
               <div className="flex gap-2 items-center">
                 <span className={`px-2.5 py-1 text-xs font-semibold rounded ${req.status?.toLowerCase() === 'approved' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                  {req.status?.toUpperCase()}
+                  {req.status?.toLowerCase() === 'approved' ? 'Đã duyệt' : 'Đã từ chối'}
                 </span>
                 {req.status?.toLowerCase() === 'approved' && (
                   <button 

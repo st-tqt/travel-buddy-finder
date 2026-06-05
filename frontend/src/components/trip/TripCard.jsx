@@ -1,37 +1,91 @@
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
+
+// Gradient đẹp cho ảnh bìa - không cần internet
+const GRADIENTS = [
+  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+  'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+  'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+  'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+  'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
+  'linear-gradient(135deg, #fccb90 0%, #d57eeb 100%)',
+  'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)',
+  'linear-gradient(135deg, #fddb92 0%, #d1fdff 100%)',
+  'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
+];
+
+// Icon địa điểm theo từ khóa
+const LOCATION_ICONS = {
+  'sapa': '⛰️', 'núi': '⛰️', 'mountain': '⛰️',
+  'biển': '🏖️', 'beach': '🏖️', 'sea': '🏖️', 'vũng tàu': '🏖️', 'nha trang': '🏖️', 'đà nẵng': '🏖️',
+  'phú quốc': '🏝️', 'island': '🏝️', 'côn đảo': '🏝️',
+  'hà nội': '🏛️', 'hanoi': '🏛️', 'hội an': '🏛️',
+  'hồ': '🌊', 'lake': '🌊',
+  'rừng': '🌲', 'forest': '🌲',
+  'thành phố': '🌆', 'city': '🌆', 'tp': '🌆',
+};
+
+function getGradient(tripId) {
+  const index = tripId ? tripId.charCodeAt(0) % GRADIENTS.length : 0;
+  return GRADIENTS[index];
+}
+
+function getLocationIcon(location) {
+  if (!location) return '✈️';
+  const loc = location.toLowerCase();
+  for (const [key, icon] of Object.entries(LOCATION_ICONS)) {
+    if (loc.includes(key)) return icon;
+  }
+  return '✈️';
+}
 
 const TripCard = ({ trip }) => {
+  const [imgError, setImgError] = useState(false);
+  const gradient = getGradient(trip.id);
+  const icon = getLocationIcon(trip.location);
+  const showImg = trip.coverImage && !imgError;
+
   return (
     <div className="group bg-white rounded-2xl shadow-sm hover:shadow-xl border border-gray-100 overflow-hidden transition-all duration-300 transform hover:-translate-y-1 flex flex-col h-full">
-      <div className="relative h-48 bg-gradient-to-br from-blue-100 to-indigo-50 overflow-hidden">
-        {/* Placeholder for trip image, could use unspalsh random image based on location */}
-        <img 
-          src={`https://source.unsplash.com/600x400/?${encodeURIComponent(trip.location || 'travel')}`} 
-          alt={trip.title}
-          className="w-full h-full object-cover mix-blend-overlay opacity-80 group-hover:scale-105 transition-transform duration-500"
-          onError={(e) => {
-            e.target.style.display = 'none'; // Fallback if image fails
-          }}
-        />
+      <div
+        className="relative h-48 overflow-hidden"
+        style={{ background: gradient }}
+      >
+        {showImg ? (
+          <img
+            src={trip.coverImage}
+            alt={trip.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center gap-2 group-hover:scale-105 transition-transform duration-500">
+            <span style={{ fontSize: '3rem' }}>{icon}</span>
+            <span className="text-white/80 font-medium text-sm tracking-wide uppercase">
+              {trip.location}
+            </span>
+          </div>
+        )}
         <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-gray-800 shadow-sm">
           {trip.status || 'OPEN'}
         </div>
       </div>
-      
+
       <div className="p-6 flex-grow flex flex-col">
         <div className="flex justify-between items-start mb-2">
           <h3 className="text-xl font-bold text-gray-900 line-clamp-1 group-hover:text-blue-600 transition-colors">
             {trip.title}
           </h3>
         </div>
-        
+
         <div className="flex items-center text-sm text-gray-500 mb-4 gap-1">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-500" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
           </svg>
           <span className="truncate">{trip.location}</span>
         </div>
-        
+
         <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
           <div className="flex items-center gap-1.5">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -55,11 +109,11 @@ const TripCard = ({ trip }) => {
           ))}
         </div>
 
-        <Link 
+        <Link
           to={`/trips/${trip.id}`}
           className="w-full block text-center bg-gray-50 border border-gray-200 text-gray-900 font-medium py-2.5 rounded-lg group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition-colors"
         >
-          View Trip Details
+          Xem chi tiết chuyến đi
         </Link>
       </div>
     </div>

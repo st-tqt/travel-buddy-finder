@@ -53,7 +53,7 @@ export default function ChatPage() {
               </svg>
             </button>
             <div>
-              <h2 className="font-bold text-gray-900">{trip ? trip.title : 'Loading...'}</h2>
+              <h2 className="font-bold text-gray-900">{trip ? trip.title : 'Đang tải...'}</h2>
               {getStatusIndicator()}
             </div>
           </div>

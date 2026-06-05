@@ -66,7 +66,7 @@ const HomePage = () => {
         <div className="absolute inset-0">
           <img 
             src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80" 
-            alt="Travel background" 
+            alt="Ảnh nền du lịch" 
             className="w-full h-full object-cover mix-blend-overlay opacity-30"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-blue-900/80 to-transparent"></div>

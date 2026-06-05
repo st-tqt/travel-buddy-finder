@@ -42,10 +42,10 @@ export const AuthProvider = ({ children }) => {
               setUser({
                 id: payload.userId || payload.id || payload.sub,
                 email: payload.email || "user@example.com",
-                name: payload.name || "Authenticated User"
+                name: payload.name || "Người dùng"
               });
             } catch {
-              setUser({ id: "authenticated-user", name: "Authenticated User", email: "user@example.com" });
+              setUser({ id: "authenticated-user", name: "Người dùng", email: "user@example.com" });
             }
           }
         }

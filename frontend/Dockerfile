@@ -24,6 +24,14 @@ RUN echo 'server { \
         proxy_set_header Host $host; \
         proxy_set_header X-Real-IP $remote_addr; \
     } \
+    location /ws/chat { \
+        proxy_pass http://api-gateway:3000; \
+        proxy_http_version 1.1; \
+        proxy_set_header Upgrade $http_upgrade; \
+        proxy_set_header Connection "Upgrade"; \
+        proxy_set_header Host $host; \
+        proxy_set_header X-Real-IP $remote_addr; \
+    } \
 }' > /etc/nginx/conf.d/default.conf
 
 EXPOSE 80

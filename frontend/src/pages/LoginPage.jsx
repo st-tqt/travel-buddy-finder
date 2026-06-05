@@ -13,11 +13,11 @@ const LoginPage = () => {
 
   const validate = () => {
     if (!email || !/\S+@\S+\.\S+/.test(email)) {
-      setError('Please enter a valid email address.');
+      setError('Vui lòng nhập địa chỉ email hợp lệ.');
       return false;
     }
     if (password.length < 6) {
-      setError('Password must be at least 6 characters long.');
+      setError('Mật khẩu phải có ít nhất 6 ký tự.');
       return false;
     }
     setError('');
@@ -33,7 +33,7 @@ const LoginPage = () => {
       await login(email, password);
       navigate(state?.from?.pathname || '/home');
     } catch (err) {
-      setError(err.response?.data?.error || 'Invalid credentials. Please try again.');
+      setError(err.response?.data?.error || 'Thông tin đăng nhập không đúng. Vui lòng thử lại.');
     } finally {
       setIsLoading(false);
     }
@@ -44,10 +44,10 @@ const LoginPage = () => {
       <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-2xl shadow-xl transition-all duration-300 hover:shadow-2xl">
         <div>
           <h2 className="mt-2 text-center text-3xl font-extrabold text-gray-900 tracking-tight">
-            Welcome Back
+            Chào mừng trở lại!
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Sign in to continue your adventure
+            Đăng nhập để tiếp tục hành trình của bạn
           </p>
         </div>
         
@@ -60,7 +60,7 @@ const LoginPage = () => {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email address</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Địa chỉ email</label>
               <input
                 type="email"
                 required
@@ -72,7 +72,7 @@ const LoginPage = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu</label>
               <input
                 type="password"
                 required
@@ -96,7 +96,7 @@ const LoginPage = () => {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-              ) : 'Sign In'}
+              ) : 'Đăng nhập'}
             </button>
           </div>
         </form>
