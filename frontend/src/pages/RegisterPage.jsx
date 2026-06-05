@@ -19,11 +19,11 @@ const RegisterPage = () => {
       return false;
     }
     if (formData.password.length < 6) {
-      setError('Password phải có ít nhất 6 ký tự.');
+      setError('Mật khẩu phải có ít nhất 6 ký tự.');
       return false;
     }
     if (formData.password !== formData.confirmPassword) {
-      setError('Confirm Password không khớp với Password.');
+      setError('Xác nhập mật khẩu không khớp.');
       return false;
     }
     setError('');
@@ -54,10 +54,10 @@ const RegisterPage = () => {
       <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-2xl shadow-xl transition-all duration-300 hover:shadow-2xl">
         <div>
           <h2 className="mt-2 text-center text-3xl font-extrabold text-gray-900 tracking-tight">
-            Create an Account
+            Tạo tài khoản
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Join thousands of travelers worldwide
+            Tham gia cùng hàng ngàn du khách trên khắp thế giới
           </p>
         </div>
         
@@ -96,7 +96,7 @@ const RegisterPage = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu</label>
               <input
                 type="password"
                 name="password"
@@ -109,7 +109,7 @@ const RegisterPage = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Xác nhập mật khẩu</label>
               <input
                 type="password"
                 name="confirmPassword"

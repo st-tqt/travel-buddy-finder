@@ -67,7 +67,7 @@ export default function JoinRequestButton({ trip, currentUser, joinStatus, onSta
       const isClosedOrCompleted = trip.status?.toLowerCase() === 'closed' || trip.status?.toLowerCase() === 'completed';
       const isFull = (trip.currentMember || 0) >= (trip.maxMembers || trip.maxMember || 0);
       if (isClosedOrCompleted || isFull) {
-        return <button disabled className="w-full px-4 py-2 bg-gray-400 text-white rounded font-medium">Trip đã đầy</button>;
+        return <button disabled className="w-full px-4 py-2 bg-gray-400 text-white rounded font-medium">Chuyến đi đã đầy</button>;
       }
       return (
         <button 
@@ -75,7 +75,7 @@ export default function JoinRequestButton({ trip, currentUser, joinStatus, onSta
           disabled={loading}
           className="w-full px-4 py-2 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 transition disabled:opacity-50"
         >
-          {loading ? 'Đang xử lý...' : 'Tham gia trip'}
+          {loading ? 'Đang xử lý...' : 'Tham gia chuyến đi'}
         </button>
       );
   }

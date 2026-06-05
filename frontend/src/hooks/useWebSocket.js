@@ -22,7 +22,8 @@ export function useWebSocket(tripId) {
     }
 
     setIsConnecting(true);
-    const wsUrl = `ws://localhost:8085/ws/chat?tripId=${tripId}&token=${token}`;
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws/chat?tripId=${tripId}&token=${token}`;
     wsRef.current = new WebSocket(wsUrl);
 
     wsRef.current.onopen = () => {

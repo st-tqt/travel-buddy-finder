@@ -8,7 +8,18 @@ export default function NotificationItem({ notification, onRead }) {
     switch (notification.type) {
       case 'JOIN_APPROVED': return '✅';
       case 'JOIN_REJECTED': return '❌';
+      case 'JOIN_REQUESTED': return '📩';
       default: return '🔔';
+    }
+  };
+
+  const getTitle = () => {
+    if (notification.title) return notification.title;
+    switch (notification.type) {
+      case 'JOIN_APPROVED': return 'Yêu cầu được duyệt';
+      case 'JOIN_REJECTED': return 'Yêu cầu bị từ chối';
+      case 'JOIN_REQUESTED': return 'Yêu cầu tham gia mới';
+      default: return 'Thông báo';
     }
   };
 
@@ -28,7 +39,7 @@ export default function NotificationItem({ notification, onRead }) {
     >
       <div className="text-2xl pt-1">{getIcon()}</div>
       <div className="flex-1">
-        <h4 className="font-semibold text-gray-900">{notification.title}</h4>
+        <h4 className="font-semibold text-gray-900">{getTitle()}</h4>
         <p className="text-gray-700 text-sm mt-1">{notification.message}</p>
         <p className="text-gray-400 text-xs mt-2">{new Date(notification.createdAt).toLocaleString()}</p>
       </div>

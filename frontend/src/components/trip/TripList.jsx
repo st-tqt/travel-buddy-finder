@@ -29,7 +29,7 @@ const TripList = () => {
   }, []);
 
   if (loading) {
-    return <div>Loading trips...</div>;
+    return <div>Đang tải chuyến đi...</div>;
   }
 
   return (

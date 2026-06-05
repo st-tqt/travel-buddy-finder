@@ -30,22 +30,22 @@ const Navbar = () => {
                   <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold shadow-md">
                     {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
                   </div>
-                  <span className="hidden sm:inline-block">{user?.name || 'User'}</span>
+                  <span className="hidden sm:inline-block">{user?.name || 'Người dùng'}</span>
                 </Link>
                 <button 
                   onClick={logout} 
                   className="text-gray-500 hover:text-red-600 font-medium transition-colors"
                 >
-                  Logout
+                  Đăng xuất
                 </button>
               </div>
             ) : (
               <div className="flex items-center gap-4">
                 <Link to="/login" className="text-gray-600 font-medium hover:text-blue-600 transition-colors">
-                  Login
+                  Đăng nhập
                 </Link>
                 <Link to="/register" className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium px-6 py-2.5 rounded-full shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transform hover:-translate-y-0.5 transition-all">
-                  Register
+                  Đăng ký
                 </Link>
               </div>
             )}

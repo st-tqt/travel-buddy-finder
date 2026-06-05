@@ -36,7 +36,23 @@ export default function ProfilePage() {
 
       setProfileUser(userRes.data);
       setTrips(tripsRes.data?.data || []);
-      setReviews(reviewsRes.data?.data || []);
+
+      const rawReviews = reviewsRes.data?.data || [];
+      const reviewsWithReviewers = await Promise.all(
+        rawReviews.map(async (review) => {
+          try {
+            const reviewerRes = await axiosInstance.get(`/users/${review.reviewerId}`);
+            return {
+              ...review,
+              reviewerName: reviewerRes.data?.name,
+              reviewerEmail: reviewerRes.data?.email
+            };
+          } catch (e) {
+            return review;
+          }
+        })
+      );
+      setReviews(reviewsWithReviewers);
 
       if (isMe) {
         try {
@@ -69,8 +85,12 @@ export default function ProfilePage() {
   };
 
   const handleReviewSubmit = (newReview) => {
-    setReviews(prev => [newReview, ...prev]);
-    // update average rating optimisticly if possible
+    const enrichedReview = {
+      ...newReview,
+      reviewerName: currentUser?.name,
+      reviewerEmail: currentUser?.email
+    };
+    setReviews(prev => [enrichedReview, ...prev]);
   };
 
   if (loading) {
@@ -92,10 +112,11 @@ export default function ProfilePage() {
       {/* Profile Header */}
       <div className="bg-white p-8 rounded-xl shadow flex items-center gap-6">
         <div className="w-24 h-24 bg-blue-600 text-white rounded-full flex items-center justify-center text-4xl font-bold shadow-md">
-          {profileUser.email?.[0]?.toUpperCase()}
+          {(profileUser.name || profileUser.email)?.[0]?.toUpperCase()}
         </div>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">{profileUser.email}</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{profileUser.name || profileUser.email}</h1>
+          {profileUser.name && <p className="text-gray-600 mt-1">{profileUser.email}</p>}
           <div className="flex items-center gap-2 mt-2 text-yellow-500">
             <span className="text-xl">⭐</span>
             <span className="font-bold text-lg">{avgRating} / 5</span>
